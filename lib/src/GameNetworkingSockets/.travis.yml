@@ -1,0 +1,46 @@
+language: minimal
+
+dist: bionic
+
+os: linux
+
+services:
+  - docker
+
+arch: amd64
+
+env:
+  global:
+    - CONTAINER_NAME=travis-docker-builder
+  jobs:
+    - IMAGE=alpine IMAGE_TAG=latest
+    - IMAGE=archlinux IMAGE_TAG=latest
+    - IMAGE=ubuntu IMAGE_TAG=latest
+    - IMAGE=ubuntu IMAGE_TAG=rolling
+    - IMAGE=ubuntu IMAGE_TAG=devel
+    - IMAGE=fedora IMAGE_TAG=latest
+    #- IMAGE=fedora IMAGE_TAG=rawhide
+
+jobs:
+  include:
+    - arch: arm64
+      env: IMAGE=ubuntu IMAGE_TAG=rolling
+    - arch: ppc64le
+      env: IMAGE=ubuntu IMAGE_TAG=rolling
+    - arch: s390x
+      env: IMAGE=ubuntu IMAGE_TAG=rolling
+
+before_install:
+  - docker run -d --rm --cap-add SYS_PTRACE --name $CONTAINER_NAME -e LC_ALL="C" -e LANG="C" -v $(pwd):/travis -w /travis $IMAGE_PREFIX$IMAGE:$IMAGE_TAG tail -f /dev/null
+  - docker ps
+  - docker exec -e TRAVIS_BUILD=1 -e IMAGE=$IMAGE -e IMAGE_TAG=$IMAGE_TAG -t $CONTAINER_NAME sh .travis/preinstall.sh
+
+install:
+  - docker exec -e TRAVIS_BUILD=1 -e IMAGE=$IMAGE -e IMAGE_TAG=$IMAGE_TAG -t $CONTAINER_NAME bash .travis/install-$IMAGE.sh
+  - docker exec -e TRAVIS_BUILD=1 -e IMAGE=$IMAGE -e IMAGE_TAG=$IMAGE_TAG -t $CONTAINER_NAME bash .travis/install-post.sh
+
+script:
+  - docker exec -e TRAVIS_BUILD=1 -e IMAGE=$IMAGE -e IMAGE_TAG=$IMAGE_TAG -t $CONTAINER_NAME bash .travis/build.sh
+  - docker kill $CONTAINER_NAME
+
+# vim: set ts=2 sts=2 sw=2 et:
