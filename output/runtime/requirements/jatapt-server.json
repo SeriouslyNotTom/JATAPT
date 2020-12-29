@@ -1,0 +1,14 @@
+{
+   "config":{
+      "password":"cheese",
+      "listen-port":6666,
+      "listen-interface":"0.0.0.0",
+      "xml-path":"C:\\Users\\thoma\\Desktop\\test-jatapt\\split-view-podcast.xml",
+      "blob-size":209715200,
+	    "blob-count":2,
+      "audio-path":"Z:\\var\\www\\html-cdn\\podcast\\audio",
+      "audio-web-prefix":"http://cdn.polygonal.polarity.technology/podcast/audio/",
+      "server-throttle":10,
+      "spooled-episodes-path":"spooled_eps.json"
+   }
+}

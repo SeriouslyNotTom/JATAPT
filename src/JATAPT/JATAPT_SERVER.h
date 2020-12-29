@@ -1,0 +1,100 @@
+#pragma once;
+
+#include <JATAPT/JATAPT_COMMON.h>
+#include <stdlib.h>
+#include <vector>
+#include <algorithm>
+#include <map>
+#include <steam/isteamnetworkingsockets.h>
+#include <steam/steamnetworkingsockets.h>
+
+class Server_Config
+{
+public:
+	const char* password;
+	const char* listen_address;
+	int listen_port;
+	int blob_size;
+	int blob_count;
+	const char* xml_path;
+	const char* spooled_path;
+	const char* audio_path;
+	const char* audio_web_prefix;
+	int throttle_val;
+};
+
+enum ClientState		
+{
+	Connecting,
+	Connected,
+	Transferring
+};
+
+struct Client_t
+{
+	bool Authenticated = false;
+	HSteamNetConnection my_conn;
+	ClientState client_state;
+	char* client_addr;
+};
+
+class blob
+{
+public:
+	int raw_size;
+	int rc_size;
+	char* data;
+	char* file_name;
+	char* guid;
+	bool lock = false;
+
+	void init(int bs);
+	void destroy();
+};
+
+class Server : private ISteamNetworkingSocketsCallbacks
+{
+private:
+	//vars
+	HSteamListenSocket ListenSock;
+	ISteamNetworkingSockets* Interface;
+	HSteamNetPollGroup PollGroup;
+	std::map<HSteamNetConnection, Client_t> Client_List;
+	std::vector<blob> blobs = std::vector<blob>();
+	std::map<char*, int> blob_map = std::map<char*, int>();
+
+	std::vector<JATAPT::COMMON::J_EP> Live_Episodes;
+	std::vector<JATAPT::COMMON::J_EP> Spooled_Episodes;
+
+	std::vector<char*> Files;
+
+	const char* Episode_JSON_Data;
+	char* File_JSON_Data;
+
+	void LoadEpisodes();
+	void LoadFiles();
+	bool Write_Episode_To_File(JATAPT::COMMON::J_EP ep, bool existing = false);
+
+	void Save_Spooled_Episodes();
+	void Load_Spooled_Episodes();
+	void Check_Spooled_Episodes();
+
+	void PollIncoming();
+	virtual void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* pInfo) override;
+	void ProcessCommand(const char* pkt, HSteamNetConnection conn);
+	bool CheckAuth(HSteamNetConnection conn, bool boot = false);
+	void TryAuth(HSteamNetConnection conn);
+
+public:
+	void Run();
+	void SendFailAuth(HSteamNetConnection conn);
+};
+
+namespace JATAPT
+{
+	namespace SERVER
+	{
+		void StartServer(char* config_path);
+		void Tick();
+	}
+}

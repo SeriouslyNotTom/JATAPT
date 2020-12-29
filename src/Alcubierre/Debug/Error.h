@@ -1,0 +1,8 @@
+
+namespace Alcubierre
+{
+	namespace Error
+	{
+
+	}
+}

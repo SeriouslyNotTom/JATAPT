@@ -1,0 +1,4 @@
+#define IDI_ICON1                       101
+
+IDI_ICON1               ICON                    "JT-ICON.ico"
+VERSION 0.2.0.1
