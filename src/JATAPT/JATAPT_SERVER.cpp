@@ -202,7 +202,7 @@ void Server::Run()
 	LoadEpisodes();
 	Alcubierre::Debug::Log::Msg("Jatapt", "Loaded %i Episodes", Server::Live_Episodes.size());
 
-	Alcubierre::Debug::Log::Msg("Jatapt", "Allocating blobs");
+	/*Alcubierre::Debug::Log::Msg("Jatapt", "Allocating blobs");
 	try {
 		for (int i = 0; i < config.blob_count; i++)
 		{
@@ -216,7 +216,7 @@ void Server::Run()
 	{
 		Alcubierre::Debug::Log::Msg("ERROR", "COULD NOT ALLOCATE MEMORY BLOBS FOR FILES %s",b.what());
 		Alcubierre::Exit(-2);
-	}
+	}*/
 
 	Alcubierre::Debug::Log::Msg("Jatapt", "Loading spooled episodes");
 	Load_Spooled_Episodes();

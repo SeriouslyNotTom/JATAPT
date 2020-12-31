@@ -31,7 +31,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/output/debug/)
 configure_file(${PROJECT_SOURCE_DIR}/src/Alcubierre/build_info.h.in ${PROJECT_SOURCE_DIR}/src/Alcubierre/build_info.h)
 configure_file(${PROJECT_SOURCE_DIR}/src/JATAPT.rc.in ${PROJECT_SOURCE_DIR}/src/JATAPT.rc)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_STRING})
+#set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_STRING})
 
 
 
