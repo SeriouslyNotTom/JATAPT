@@ -10,10 +10,14 @@
 #include <signal.h>
 #include <Alcubierre/Debug/Log.h>
 #include <pugixml.hpp>
+#include <rapidjson/rapidjson.h>
+#include <rapidjson/document.h>
 
 using namespace tinyxml2;
 using namespace JATAPT::COMMON;
 
+
+//i might be ashamed of having these variables, but i don't go around digging up your backyard now do i?
 std::map<std::string, int> DayMap = { {"Sun",0}, {"Mon",1}, {"Tue", 2}, {"Wed",3}, {"Thu",4}, {"Fri", 5}, {"Sat",6} };
 std::map<std::string, int> MonthMap = { {"Jan", 0}, {"Feb", 1}, {"Mar", 2}, {"Apr", 3}, {"May", 4}, {"Jun", 5}, {"Jul", 6}, {"Aug", 7}, {"Sep", 8}, {"Oct", 9}, {"Nov", 10}, {"Dec", 11} };
 
@@ -114,6 +118,21 @@ const char* JATAPT::COMMON::Packetize_Episodes(std::vector<JATAPT::COMMON::J_EP>
 	Alcubierre::Debug::Log::Msg("Jatapt", "Done");
 	return json_data.c_str();
 }
+
+using namespace rapidjson;
+
+//std::vector<JATAPT::COMMON::J_EP> JATAPT::COMMON::Deserialize_Episodes(char* JSON_DATA)
+//{
+//	std::vector<JATAPT::COMMON::J_EP> eps;
+//	Document document;
+//	document.Parse(JSON_DATA);
+//
+//
+//
+//	return eps;
+//}
+
+
 
 std::vector<JATAPT::COMMON::J_EP> JATAPT::COMMON::Deserialize_Episodes(char* JSON_DATA)
 {

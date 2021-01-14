@@ -8,6 +8,11 @@
 #include <chrono>
 #include <vector>
 #include <map>
+#include <bitsery/bitsery.h>
+#include <bitsery/adapter/buffer.h>
+#include <bitsery/traits/string.h>
+
+
 
 extern const char* Months[];
 extern const char* Days[];
@@ -18,6 +23,12 @@ extern std::map<char, char*> XMLSpecialChars;
 
 namespace JATAPT
 {
+	namespace EPISODE
+	{
+		
+
+
+	}
 	namespace COMMON
 	{
 		//JATAPT_COMMAND_HEADER
@@ -65,6 +76,11 @@ namespace JATAPT
 			std::string audio_duration;
 			std::string guid;
 			std::string publication_date;
+		};
+
+		template <typename S>
+		void serialize(S& s, J_EP& o) {
+			s.text1b(o.title);
 		};
 
 		void init_common();

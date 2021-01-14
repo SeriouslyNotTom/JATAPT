@@ -31,12 +31,36 @@
 #include <tinyxml2.h>
 #include <Alcubierre/Libraries/Utilities/RandomUtils.h>
 #include <signal.h>
+#include <Experiments/testser.cpp>
+#include <JATAPT/Network/Packets.h>
 
 using namespace Alcubierre::Engine::Window;
 using json = nlohmann::json;
 
 int main(int argc, char* argv[])
 {
+
+	JATAPT::COMMON::NET::single_episode_packet pkt;
+	pkt.opcode = JATAPT::COMMON::NET::opcode_e::C_QUERY;
+	pkt.packet_handle = "test packet";
+	pkt.statuscode = 20;
+	pkt.packet_info.crc = 235293592945;
+	pkt.packet_info.packetid = 101;
+	pkt.packet_info.sent_time = (time_t)333434;
+
+	std::ofstream ss("out.text", std::ios::binary);
+	cereal::BinaryOutputArchive oarchive(ss);
+	oarchive(pkt);
+	ss.flush();
+	ss.close();
+
+	std::ifstream is("out.text", std::ios::binary);
+	cereal::BinaryInputArchive iarchive(is);
+	JATAPT::COMMON::NET::single_episode_packet pkt2;
+	iarchive(pkt2);
+
+	test();
+
 	try
 	{
 		bool ServerMode = false;

@@ -513,7 +513,6 @@ void Server::LoadFiles()
 	if (result != 0) { Alcubierre::Exit(-666); }
 	std::vector<char*> split_view_files = Alcubierre::File::Util::ListDir(config.audio_path);
 	split_view_files = Alcubierre::File::Util::Strip_FileTypes(split_view_files, ".mp3", true);
-	int test = doj::alphanum_comp("thing", "thing1") < 0;
 	std::sort(split_view_files.begin(), split_view_files.end(), alphanum_comp_func);
 	std::vector<char*> flick_view_files = Alcubierre::File::Util::ListDir((std::string(config.audio_path)+std::string("/Flick.View")).c_str());
 	flick_view_files = Alcubierre::File::Util::Strip_FileTypes(flick_view_files, ".mp3", true);
