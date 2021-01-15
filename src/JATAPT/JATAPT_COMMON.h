@@ -8,11 +8,12 @@
 #include <chrono>
 #include <vector>
 #include <map>
-#include <bitsery/bitsery.h>
-#include <bitsery/adapter/buffer.h>
-#include <bitsery/traits/string.h>
-
-
+#include <cereal/archives/binary.hpp>
+#include <sstream>
+#include <cereal/types/string.hpp>
+#include <cereal/types/common.hpp>
+#include <cereal/types/chrono.hpp>
+#include <cereal/types/vector.hpp>
 
 extern const char* Months[];
 extern const char* Days[];
@@ -76,11 +77,24 @@ namespace JATAPT
 			std::string audio_duration;
 			std::string guid;
 			std::string publication_date;
+
+			template<class Archive>
+			void serialize(Archive& ar)
+			{
+				ar(title, description, summary, subtitle, audio_url, audio_duration, guid, publication_date);
+			}
+
 		};
 
-		template <typename S>
-		void serialize(S& s, J_EP& o) {
-			s.text1b(o.title);
+		struct J_EP_SET
+		{
+			std::vector<J_EP> ep_set;
+
+			template<class Archive>
+			void serialize(Archive& ar)
+			{
+				ar(ep_set);
+			}
 		};
 
 		void init_common();

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <JATAPT/JATAPT_COMMON.h>
 
 #include <cereal/archives/binary.hpp>
@@ -16,7 +18,7 @@ namespace JATAPT
 		{
 			enum opcode_e
 			{
-				UNDEFINED,
+				opcode_UNDEFINED,
 				C_AUTH,
 				S_AUTH,
 				C_QUERY,
@@ -25,8 +27,17 @@ namespace JATAPT
 				C_REPLY
 			};
 
-			struct packet_fingerprint
+			enum statuscode_e
 			{
+				statuscode_UNDEFINED,
+				OK,
+				ACK,
+				NACK
+			};
+
+			class packet_fingerprint
+			{
+			public:
 				int packetid = 0;
 				time_t sent_time = 0;
 				std::uint32_t crc = 0;
@@ -38,11 +49,12 @@ namespace JATAPT
 				}
 			};
 			
-			struct packet_base
+			class packet_base
 			{
-				std::string packet_handle = "undefined";
-				opcode_e opcode = opcode_e::UNDEFINED;
-				int statuscode = 0;
+			public:
+				std::string packet_handle = "UNDEFINED";
+				opcode_e opcode = opcode_e::opcode_UNDEFINED;
+				statuscode_e statuscode = statuscode_e::statuscode_UNDEFINED;
 				packet_fingerprint packet_info;
 
 				template<class Archive>
@@ -53,9 +65,18 @@ namespace JATAPT
 
 			};
 
-			struct single_episode_packet : virtual packet_base
+			class single_episode_packet : public packet_base
 			{
+			public:
+				std::string packet_handle = "jt_single_episode_packet";
+				JATAPT::COMMON::J_EP ep;
 				
+				template<class Archive>
+				void serialize(Archive& ar)
+				{
+					packet_base::serialize(ar);
+					ar(ep);
+				}
 			};
 
 		}

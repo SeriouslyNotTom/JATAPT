@@ -7,6 +7,11 @@
 #include <map>
 #include <steam/isteamnetworkingsockets.h>
 #include <steam/steamnetworkingsockets.h>
+#include <cereal/types/string.hpp>
+#include <cereal/types/common.hpp>
+#include <cereal/types/chrono.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/archives/binary.hpp>
 
 class Server_Config
 {
@@ -52,6 +57,19 @@ public:
 	void destroy();
 };
 
+struct Episode_Spool
+{
+	std::vector<JATAPT::COMMON::J_EP> spooled_episodes;
+	int spooled_count = 0;
+	time_t soonest_ep_date = 0;
+
+	template<class Archive>
+	void serialize(Archive& ar)
+	{
+		ar(spooled_episodes, spooled_count, soonest_ep_date);
+	}
+};
+
 class Server : private ISteamNetworkingSocketsCallbacks
 {
 private:
@@ -64,7 +82,16 @@ private:
 	std::map<char*, int> blob_map = std::map<char*, int>();
 
 	std::vector<JATAPT::COMMON::J_EP> Live_Episodes;
-	std::vector<JATAPT::COMMON::J_EP> Spooled_Episodes;
+
+	//spool stuff
+	Episode_Spool episode_spool;
+
+	bool Add_To_Spool(JATAPT::COMMON::J_EP ep);
+	bool Remove_From_Spool(JATAPT::COMMON::J_EP ep);
+
+	void Save_Spooled_Episodes();
+	void Load_Spooled_Episodes();
+	void Check_Spooled_Episodes();
 
 	std::vector<char*> Files;
 
@@ -75,9 +102,7 @@ private:
 	void LoadFiles();
 	bool Write_Episode_To_File(JATAPT::COMMON::J_EP ep, bool existing = false);
 
-	void Save_Spooled_Episodes();
-	void Load_Spooled_Episodes();
-	void Check_Spooled_Episodes();
+	
 
 	void PollIncoming();
 	virtual void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* pInfo) override;

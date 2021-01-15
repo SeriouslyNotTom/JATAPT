@@ -36,28 +36,59 @@
 
 using namespace Alcubierre::Engine::Window;
 using json = nlohmann::json;
+using namespace JATAPT::COMMON::NET;
 
 int main(int argc, char* argv[])
 {
 
-	JATAPT::COMMON::NET::single_episode_packet pkt;
-	pkt.opcode = JATAPT::COMMON::NET::opcode_e::C_QUERY;
-	pkt.packet_handle = "test packet";
-	pkt.statuscode = 20;
-	pkt.packet_info.crc = 235293592945;
-	pkt.packet_info.packetid = 101;
-	pkt.packet_info.sent_time = (time_t)333434;
+	JATAPT::COMMON::J_EP ep1;
+	ep1.title = "title";
+	ep1.description = "description";
+	JATAPT::COMMON::NET::single_episode_packet sepkt1;
+	sepkt1.packet_info.packetid = rand();
+	sepkt1.packet_info.sent_time = std::time(0);
+	sepkt1.packet_info.crc = 123456;
+	sepkt1.opcode = opcode_e::S_REPLY;
+	sepkt1.statuscode = statuscode_e::OK;
+	sepkt1.ep = ep1;
+
+	JATAPT::COMMON::J_EP ep2;
+	ep2.title = "title2";
+	ep2.description = "description2";
+	JATAPT::COMMON::NET::single_episode_packet sepkt2;
+	sepkt2.packet_info.packetid = rand();
+	sepkt2.packet_info.sent_time = std::time(0);
+	sepkt2.packet_info.crc = 123456;
+	sepkt2.opcode = opcode_e::S_REPLY;
+	sepkt2.statuscode = statuscode_e::OK;
+	sepkt2.ep = ep2;
+
+	JATAPT::COMMON::J_EP ep3;
+	ep3.title = "title3";
+	ep3.description = "description3";
+	JATAPT::COMMON::NET::single_episode_packet sepkt3;
+	sepkt3.packet_info.packetid = rand();
+	sepkt3.packet_info.sent_time = std::time(0);
+	sepkt3.packet_info.crc = 123456;
+	sepkt3.opcode = opcode_e::S_REPLY;
+	sepkt3.statuscode = statuscode_e::OK;
+	sepkt3.ep = ep3;
+
+	std::vector<JATAPT::COMMON::J_EP> jeps;
+	jeps.push_back(ep1);
+	jeps.push_back(ep2);
+	jeps.push_back(ep3);
 
 	std::ofstream ss("out.text", std::ios::binary);
 	cereal::BinaryOutputArchive oarchive(ss);
-	oarchive(pkt);
+	oarchive(jeps);
 	ss.flush();
 	ss.close();
 
 	std::ifstream is("out.text", std::ios::binary);
 	cereal::BinaryInputArchive iarchive(is);
-	JATAPT::COMMON::NET::single_episode_packet pkt2;
-	iarchive(pkt2);
+	std::vector<JATAPT::COMMON::J_EP> jeps2;
+	iarchive(jeps2);
 
 	test();
 

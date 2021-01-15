@@ -25,6 +25,7 @@
 #include <fstream>
 #include <ctime>
 #include <signal.h>
+#include <JATAPT/Network/Packets.h>
 
 using namespace std;
 using json = nlohmann::json;
@@ -48,9 +49,67 @@ void blob::destroy()
 	rc_size = 0;
 }
 
+bool Server::Add_To_Spool(JATAPT::COMMON::J_EP ep)
+{
+	tm* t;
+	ParseRFC822(ep.publication_date.c_str(), t);
+	time_t this_ep_pubtime = tm_to_time_t(t);
+
+	JATAPTEpisodeVerifyState_ state = JATAPT::COMMON::Verify_Episode(ep);
+	if (state & TitleDescriptionSubtitleFilePubDateSummary)
+	{
+		Alcubierre::Debug::Log::Msg("ERROR", "Episode attempting to be spooled does not have Title and/or Description, Subtitle, File name, Publication Date, Summary");
+		return false;
+	}
+	else {
+		episode_spool.spooled_episodes.push_back(ep);
+		episode_spool.spooled_count++;
+
+		//check if soonest ep time is not defined and update if so
+		if (episode_spool.soonest_ep_date == 0) { episode_spool.soonest_ep_date = this_ep_pubtime; }
+		else {if (episode_spool.soonest_ep_date > this_ep_pubtime) { episode_spool.soonest_ep_date = this_ep_pubtime; }}
+		
+		return true;
+	}
+	return false;
+}
+
+bool Server::Remove_From_Spool(JATAPT::COMMON::J_EP ep)
+{
+	bool found = false;
+	if (episode_spool.spooled_count > 0)
+	{
+		std::vector<JATAPT::COMMON::J_EP> new_eps = std::vector<JATAPT::COMMON::J_EP>();
+		for (int i = 0; i <= episode_spool.spooled_episodes.size(); i++)
+		{
+			JATAPT::COMMON::J_EP check_ep = episode_spool.spooled_episodes[i];
+			if (ep.guid != check_ep.guid)
+			{
+				new_eps.push_back(check_ep);
+			}
+			else { found = true; }
+		}
+	}
+	return found;
+}
+
 void Server::Save_Spooled_Episodes()
 {
-	if (Spooled_Episodes.size() > 0)
+
+	if (episode_spool.spooled_count > 0)
+	{
+		//for (int i = 0; i <= episode_spool.spooled_count; i++)
+		//{
+		//	//verify the episode i guess
+		//}
+
+		std::ofstream ofs(config.spooled_path, std::ios::binary);
+		cereal::BinaryOutputArchive archive_output(ofs);
+
+		archive_output(episode_spool);
+	}
+
+	/*if (Spooled_Episodes.size() > 0)
 	{
 		json spooled;
 		for (int i = 0; i < Spooled_Episodes.size(); i++)
@@ -88,12 +147,29 @@ void Server::Save_Spooled_Episodes()
 		outfile.open(config.spooled_path);
 		outfile << char(4);
 		outfile.close();
-	}
+	}*/
 }
 
 void Server::Load_Spooled_Episodes()
 {
-	std::vector<JATAPT::COMMON::J_EP> loaded_eps;
+
+	if (Alcubierre::File::Util::FileExists(config.spooled_path))
+	{
+		std::ifstream is(config.spooled_path, std::ios::binary);
+		cereal::BinaryInputArchive inarchive(is);
+
+		try {
+			inarchive(episode_spool);
+		}
+		catch (cereal::Exception e)
+		{
+
+		}
+
+	}
+	
+
+	/*std::vector<JATAPT::COMMON::J_EP> loaded_eps;
 	bool exists = Alcubierre::File::Util::FileExists(config.spooled_path);
 	if (exists)
 	{
@@ -156,40 +232,40 @@ void Server::Load_Spooled_Episodes()
 		{
 			Alcubierre::Debug::Log::Msg("ERROR", "Could not parse spooled episode JSON \r\n%s",e.what());
 		}
-	}
+	}*/
 }
 
 void Server::Check_Spooled_Episodes()
 {
-	if (Spooled_Episodes.size() <= 0) { return; }
-	std::time_t t = std::time(0);   // get time now
-	tm* td = localtime(&t);
-	bool didwork = false;
+	//if (Spooled_Episodes.size() <= 0) { return; }
+	//std::time_t t = std::time(0);   // get time now
+	//tm* td = localtime(&t);
+	//bool didwork = false;
 
-	std::vector<JATAPT::COMMON::J_EP> newvec;
-	for(int i = 0; i<Spooled_Episodes.size(); i++)
-	{
-		JATAPT::COMMON::J_EP ep = Spooled_Episodes[i];
-		struct tm ep_time;
-		ParseRFC822(ep.publication_date.c_str(),&ep_time);
-		std::time_t ti = tm_to_time_t(&ep_time);
+	//std::vector<JATAPT::COMMON::J_EP> newvec;
+	//for(int i = 0; i<Spooled_Episodes.size(); i++)
+	//{
+	//	JATAPT::COMMON::J_EP ep = Spooled_Episodes[i];
+	//	struct tm ep_time;
+	//	ParseRFC822(ep.publication_date.c_str(),&ep_time);
+	//	std::time_t ti = tm_to_time_t(&ep_time);
 
-		//Alcubierre::Debug::Log::Msg("Time-Test","time_now: %i : ep_time: %i",t,ti);
-		if (ti <= t) {
-			bool existing = (ep.guid != "" | ep.guid.size() > 0);
-			Alcubierre::Debug::Log::Msg("JATAPT", "Publishing Episode: [%s] to XML", ep.title.c_str());
-			Write_Episode_To_File(ep, existing);
-			didwork = true;
-		}
-		else {
-			newvec.push_back(Spooled_Episodes[i]);
-		}
-	}
-	if (didwork)
-	{
-		Spooled_Episodes = newvec;
-		Save_Spooled_Episodes();
-	}
+	//	//Alcubierre::Debug::Log::Msg("Time-Test","time_now: %i : ep_time: %i",t,ti);
+	//	if (ti <= t) {
+	//		bool existing = (ep.guid != "" | ep.guid.size() > 0);
+	//		Alcubierre::Debug::Log::Msg("JATAPT", "Publishing Episode: [%s] to XML", ep.title.c_str());
+	//		Write_Episode_To_File(ep, existing);
+	//		didwork = true;
+	//	}
+	//	else {
+	//		newvec.push_back(Spooled_Episodes[i]);
+	//	}
+	//}
+	//if (didwork)
+	//{
+	//	Spooled_Episodes = newvec;
+	//	Save_Spooled_Episodes();
+	//}
 
 }
 
@@ -469,7 +545,7 @@ void Server::ProcessCommand(const char* pkt, HSteamNetConnection conn)
 					}
 					
 					Alcubierre::Debug::Log::Msg("JATAPT", "Episode : [%s] set to publish in %s", ep.title.c_str(), t_string.c_str());
-					Spooled_Episodes.push_back(ep);
+					//Spooled_Episodes.push_back(ep);
 					Save_Spooled_Episodes();
 					break;
 				}
