@@ -122,12 +122,12 @@ void JATAPT_GUI::DrawMainList()
 					if (ImGui::IsItemHovered())
 					{
 						ImGui::BeginTooltip();
-						ImGui::Text("%s", ep.audio_url.c_str());
+						ImGui::Text("%s", ep.episode_file.file_name.c_str());
 						ImGui::EndTooltip();
 					}
 					ImGui::NextColumn();
-					ImGui::Text(ep.audio_duration.c_str()); ImGui::NextColumn();
-					ImGui::Text(ep.publication_date.c_str()); ImGui::NextColumn();
+					ImGui::Text(std::to_string(ep.episode_file.file_duration_seconds).c_str()); ImGui::NextColumn();
+					//ImGui::Text(ep.publication_date.c_str()); ImGui::NextColumn();
 				}
 
 				ImGui::EndChild();
@@ -309,7 +309,7 @@ void JATAPT_GUI::DrawEditWindow()
 
 			JATAPTEpisodeVerifyState_ state;
 			state = (JATAPTEpisodeVerifyState_)Gui.InputVerifyState;
-			if (state & JATAPTEpisodeVerifyState_NoTitle | state & JATAPTEpisodeVerifyState_NoDescription | state & JATAPTEpisodeVerifyState_NoFile | state & JATAPTEpisodeVerifyState_NoSubtitle)
+			if (state & JATAPTEpisodeVerifyState_NoEpTitle | state & JATAPTEpisodeVerifyState_NoEpDescription | state & JATAPTEpisodeVerifyState_NoFileName | state & JATAPTEpisodeVerifyState_NoEpSubtitle)
 			{
 				ImGui::OpenPopup("Invalid Input");
 			}
@@ -334,10 +334,10 @@ void JATAPT_GUI::DrawEditWindow()
 			JATAPTEpisodeVerifyState_ state;
 			state = (JATAPTEpisodeVerifyState_)Gui.InputVerifyState;
 
-			if (state & JATAPTEpisodeVerifyState_NoFile) { ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing File How did you even this"); }
-			if (state & JATAPTEpisodeVerifyState_NoTitle) { ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Title, \nPlease input a title for the episode"); }
-			if (state & JATAPTEpisodeVerifyState_NoDescription) { ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Description, \nPlease input a description for the episode"); }
-			if (state & JATAPTEpisodeVerifyState_NoSubtitle) { ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Subtitle, \n Please input a subtitle for the episode"); }
+			if (state & JATAPTEpisodeVerifyState_NoFileName) { ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing File How did you even this"); }
+			if (state & JATAPTEpisodeVerifyState_NoEpTitle) { ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Title, \nPlease input a title for the episode"); }
+			if (state & JATAPTEpisodeVerifyState_NoEpDescription) { ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Description, \nPlease input a description for the episode"); }
+			if (state & JATAPTEpisodeVerifyState_NoEpSubtitle) { ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Missing Subtitle, \n Please input a subtitle for the episode"); }
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -449,6 +449,9 @@ void JATAPT_GUI::ClearDraft()
 
 DRAFT_DATA JATAPT_GUI::FillDraft(JATAPT::COMMON::J_EP episode)
 {
+
+	//TODO: fix this
+
 	DRAFT_DATA draft = {};
 	draft.title = new char[1024];
 	strcpy(draft.title, episode.title.c_str());
@@ -470,12 +473,16 @@ DRAFT_DATA JATAPT_GUI::FillDraft(JATAPT::COMMON::J_EP episode)
 
 JATAPT::COMMON::J_EP JATAPT::CLIENT::JATAPT_GUI::FillEpisode(DRAFT_DATA draft)
 {
+
+	//TODO: fix this
+
 	JATAPT::COMMON::J_EP ep;
+
 	ep.title = draft.title;
 	ep.description = draft.description;
 	ep.summary = draft.description;
 	ep.subtitle = draft.subtitle;
-	ep.audio_url = draft.file;
+	ep.episode_file.file_name = draft.file;
 	ep.guid = draft.guid;
 	int hours = 0;
 	int minutes = 0;
@@ -631,7 +638,7 @@ void JATAPT_NET_CLIENT::Run()
 	memset(addr, 0x00, 255);
 	addr = Alcubierre::Net::resolve(Gui.input_url);
 	serverAddr.ParseString(addr);
-	serverAddr.m_port = 6666;
+	serverAddr.m_port = 6665;
 	m_pInterface = SteamNetworkingSockets();
 	char szAddr[SteamNetworkingIPAddr::k_cchMaxString];
 	serverAddr.ToString(szAddr, sizeof(szAddr), true);
@@ -691,8 +698,11 @@ void JATAPT_NET_CLIENT::GetFiles()
 
 void JATAPT_NET_CLIENT::SendEpisode(JATAPT::COMMON::J_EP Episode)
 {
-	JATAPTEpisodeVerifyState_ verif = Verify_Episode(Episode);
-	if (verif & JATAPTEpisodeVerifyState_NoTitle | verif & JATAPTEpisodeVerifyState_NoDescription | verif & JATAPTEpisodeVerifyState_NoSummary | verif & JATAPTEpisodeVerifyState_NoSubtitle | verif & JATAPTEpisodeVerifyState_NoFile | verif & JATAPTEpisodeVerifyState_NoPubDate) { return; }
+
+	//TODO: [JATAPT] fix send episode
+
+	/*JATAPTEpisodeVerifyState_ verif = Verify_Episode(Episode);
+	if (verif & JATAPTEpisodeVerifyState_NoEpTitle | verif & JATAPTEpisodeVerifyState_NoEpDescription | verif & JATAPTEpisodeVerifyState_NoEpSummary | verif & JATAPTEpisodeVerifyState_NoSubtitle | verif & JATAPTEpisodeVerifyState_NoFile | verif & JATAPTEpisodeVerifyState_NoPubDate) { return; }
 
 	json j;
 	j[J_PF_HEADER] = J_CH::EPISODE_EDIT;
@@ -718,7 +728,7 @@ void JATAPT_NET_CLIENT::SendEpisode(JATAPT::COMMON::J_EP Episode)
 	data = j2.dump();
 	j[J_PF_DATA] = data;
 	std::string packet_data = j.dump();
-	m_pInterface->SendMessageToConnection(m_hConnection, packet_data.c_str(), (uint32)packet_data.length(), k_nSteamNetworkingSend_Reliable, nullptr);
+	m_pInterface->SendMessageToConnection(m_hConnection, packet_data.c_str(), (uint32)packet_data.length(), k_nSteamNetworkingSend_Reliable, nullptr);*/
 }
 
 #pragma endregion JATAPT_NET_CLIENT_DEFINITION

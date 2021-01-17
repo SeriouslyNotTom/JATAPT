@@ -51,23 +51,21 @@ void blob::destroy()
 
 bool Server::Add_To_Spool(JATAPT::COMMON::J_EP ep)
 {
-	tm* t;
-	ParseRFC822(ep.publication_date.c_str(), t);
-	time_t this_ep_pubtime = tm_to_time_t(t);
+	time_t this_ep_pubtime = ep.episode_publication_time;
 
 	JATAPTEpisodeVerifyState_ state = JATAPT::COMMON::Verify_Episode(ep);
-	if (state & TitleDescriptionSubtitleFilePubDateSummary)
+	if (state & JATAPTEpisodeVerifyState_TitleDescriptionSubtitleSummaryFileNameFilePathPubDate)
 	{
 		Alcubierre::Debug::Log::Msg("ERROR", "Episode attempting to be spooled does not have Title and/or Description, Subtitle, File name, Publication Date, Summary");
 		return false;
 	}
 	else {
-		episode_spool.spooled_episodes.push_back(ep);
-		episode_spool.spooled_count++;
+		Data.Spool.spooled_episodes.push_back(ep);
+		Data.Spool.spooled_count++;
 
 		//check if soonest ep time is not defined and update if so
-		if (episode_spool.soonest_ep_date == 0) { episode_spool.soonest_ep_date = this_ep_pubtime; }
-		else {if (episode_spool.soonest_ep_date > this_ep_pubtime) { episode_spool.soonest_ep_date = this_ep_pubtime; }}
+		if (Data.Spool.soonest_ep_date == 0) { Data.Spool.soonest_ep_date = this_ep_pubtime; }
+		else {if (Data.Spool.soonest_ep_date > this_ep_pubtime) { Data.Spool.soonest_ep_date = this_ep_pubtime; }}
 		
 		return true;
 	}
@@ -77,12 +75,12 @@ bool Server::Add_To_Spool(JATAPT::COMMON::J_EP ep)
 bool Server::Remove_From_Spool(JATAPT::COMMON::J_EP ep)
 {
 	bool found = false;
-	if (episode_spool.spooled_count > 0)
+	if (Data.Spool.spooled_count > 0)
 	{
 		std::vector<JATAPT::COMMON::J_EP> new_eps = std::vector<JATAPT::COMMON::J_EP>();
-		for (int i = 0; i <= episode_spool.spooled_episodes.size(); i++)
+		for (int i = 0; i <= Data.Spool.spooled_episodes.size(); i++)
 		{
-			JATAPT::COMMON::J_EP check_ep = episode_spool.spooled_episodes[i];
+			JATAPT::COMMON::J_EP check_ep = Data.Spool.spooled_episodes[i];
 			if (ep.guid != check_ep.guid)
 			{
 				new_eps.push_back(check_ep);
@@ -96,7 +94,7 @@ bool Server::Remove_From_Spool(JATAPT::COMMON::J_EP ep)
 void Server::Save_Spooled_Episodes()
 {
 
-	if (episode_spool.spooled_count > 0)
+	if (Data.Spool.spooled_count > 0)
 	{
 		//for (int i = 0; i <= episode_spool.spooled_count; i++)
 		//{
@@ -106,7 +104,7 @@ void Server::Save_Spooled_Episodes()
 		std::ofstream ofs(config.spooled_path, std::ios::binary);
 		cereal::BinaryOutputArchive archive_output(ofs);
 
-		archive_output(episode_spool);
+		archive_output(Data.Spool);
 	}
 
 	/*if (Spooled_Episodes.size() > 0)
@@ -159,7 +157,7 @@ void Server::Load_Spooled_Episodes()
 		cereal::BinaryInputArchive inarchive(is);
 
 		try {
-			inarchive(episode_spool);
+			inarchive(Data.Spool);
 		}
 		catch (cereal::Exception e)
 		{
@@ -237,6 +235,34 @@ void Server::Load_Spooled_Episodes()
 
 void Server::Check_Spooled_Episodes()
 {
+
+	if (Data.Spool.spooled_count > 0)
+	{
+		time_t t_now = std::time(0);
+		
+		if (Data.Spool.soonest_ep_date <= t_now)
+		{
+			Episode_Spool new_spool;
+			for (int i = 0; i <= Data.Spool.spooled_episodes.size(); i++)
+			{
+				J_EP this_ep = Data.Spool.spooled_episodes[i];
+				time_t this_ep_time = this_ep.episode_publication_time;
+				
+				if (t_now >= this_ep_time)
+				{
+					Server::Write_Episode_To_File(this_ep, false);
+				}
+				else {
+					new_spool.spooled_episodes.push_back(this_ep);
+					new_spool.spooled_count++;
+					if (new_spool.soonest_ep_date == 0 | this_ep_time < new_spool.soonest_ep_date){new_spool.soonest_ep_date = this_ep_time;}
+				}
+
+			}
+			Data.Spool = new_spool;
+		}
+	}
+
 	//if (Spooled_Episodes.size() <= 0) { return; }
 	//std::time_t t = std::time(0);   // get time now
 	//tm* td = localtime(&t);
@@ -271,12 +297,13 @@ void Server::Check_Spooled_Episodes()
 
 void Server::Run()
 {
+	//todo
 	Alcubierre::Debug::Log::Msg("Jatapt", "Loading Files");
 	//LoadFiles();
-	Alcubierre::Debug::Log::Msg("Jatapt", "Loaded %i Files", Files.size());
+	//Alcubierre::Debug::Log::Msg("Jatapt", "Loaded %i Files", Files.size());
 	Alcubierre::Debug::Log::Msg("Jatapt", "Loading Episodes");
 	LoadEpisodes();
-	Alcubierre::Debug::Log::Msg("Jatapt", "Loaded %i Episodes", Server::Live_Episodes.size());
+	//Alcubierre::Debug::Log::Msg("Jatapt", "Loaded %i Episodes", Server::Live_Episodes.size());
 
 	/*Alcubierre::Debug::Log::Msg("Jatapt", "Allocating blobs");
 	try {
@@ -435,143 +462,146 @@ void Server::OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCa
 
 void Server::ProcessCommand(const char* pkt, HSteamNetConnection conn)
 {
-	json data;
-	try{ data = json::parse(pkt); }
-	catch (nlohmann::json::exception e)
-	{
-		Alcubierre::Debug::Log::Msg("ERROR", "INCOMING PACKET IS NOT VALID JSON OR COULD NOT BE PARSED");
-		//fprintf(stdout, "reason: %s\r\n", e.what);
-		return;
-	}
-	Alcubierre::Debug::Log::Msg("Network", "Packet Data: %s", pkt);
-	J_CH header = J_CH(data[J_PF_HEADER]);
-	switch (header)
-	{
+	//todo replace all this
 
-		case J_CH::AUTH_RESPONSE:
-		{
-			if (strlen(config.password) > 0)
-			{
-				if (data[J_PF_PASSWORD] == std::string(config.password))
-				{
-					Client_List[conn].Authenticated = true;
-					json pkt;
-					pkt[J_PF_HEADER] = J_CH::AUTH_SUCCESS;
-					std::string dmp = pkt.dump();
-					Interface->SendMessageToConnection(conn, dmp.c_str(), (uint32)dmp.length(), k_nSteamNetworkingSend_Reliable, nullptr);
-					break;
-				}
+	//json data;
+	//try{ data = json::parse(pkt); }
+	//catch (nlohmann::json::exception e)
+	//{
+	//	Alcubierre::Debug::Log::Msg("ERROR", "INCOMING PACKET IS NOT VALID JSON OR COULD NOT BE PARSED");
+	//	//fprintf(stdout, "reason: %s\r\n", e.what);
+	//	return;
+	//}
+	//Alcubierre::Debug::Log::Msg("Network", "Packet Data: %s", pkt);
+	//J_CH header = J_CH(data[J_PF_HEADER]);
+	//switch (header)
+	//{
 
-				json pkt;
-				pkt[J_PF_HEADER] = J_CH::AUTH_FAIL;
-				std::string dmp = pkt.dump();
-				Interface->SendMessageToConnection(conn, dmp.c_str(), (uint32)dmp.length(), k_nSteamNetworkingSend_Reliable, nullptr);
-				break;
-			}
-			else {
-				Client_List[conn].Authenticated = true;
-				json pkt;
-				pkt[J_PF_HEADER] = J_CH::AUTH_SUCCESS;
-				std::string dmp = pkt.dump();
-				Interface->SendMessageToConnection(conn, dmp.c_str(), (uint32)dmp.length(), k_nSteamNetworkingSend_Reliable, nullptr);
-				break;
-			}
-		}
+	//	case J_CH::AUTH_RESPONSE:
+	//	{
+	//		if (strlen(config.password) > 0)
+	//		{
+	//			if (data[J_PF_PASSWORD] == std::string(config.password))
+	//			{
+	//				Client_List[conn].Authenticated = true;
+	//				json pkt;
+	//				pkt[J_PF_HEADER] = J_CH::AUTH_SUCCESS;
+	//				std::string dmp = pkt.dump();
+	//				Interface->SendMessageToConnection(conn, dmp.c_str(), (uint32)dmp.length(), k_nSteamNetworkingSend_Reliable, nullptr);
+	//				break;
+	//			}
 
-		case J_CH::EPISODE_QUERY:
-		{
-			if (CheckAuth(conn) != true) { break; }
-			if (data[J_PF_QUERY] == "FULLSET")
-			{
-				Server::LoadEpisodes();
-				json pkt;
-				pkt[J_PF_HEADER] = J_CH::EPISODE_QUERY;
-				pkt[J_PF_QUERY] = "FULLSET RESPONSE";
-				pkt[J_PF_DATA] = Episode_JSON_Data;
-				std::string dmp = pkt.dump();
-				Interface->SendMessageToConnection(conn, dmp.c_str(), (uint32)dmp.length(), k_nSteamNetworkingSend_Reliable, nullptr);
-				break;
-			}
-		}
+	//			json pkt;
+	//			pkt[J_PF_HEADER] = J_CH::AUTH_FAIL;
+	//			std::string dmp = pkt.dump();
+	//			Interface->SendMessageToConnection(conn, dmp.c_str(), (uint32)dmp.length(), k_nSteamNetworkingSend_Reliable, nullptr);
+	//			break;
+	//		}
+	//		else {
+	//			Client_List[conn].Authenticated = true;
+	//			json pkt;
+	//			pkt[J_PF_HEADER] = J_CH::AUTH_SUCCESS;
+	//			std::string dmp = pkt.dump();
+	//			Interface->SendMessageToConnection(conn, dmp.c_str(), (uint32)dmp.length(), k_nSteamNetworkingSend_Reliable, nullptr);
+	//			break;
+	//		}
+	//	}
 
-		case J_CH::FILES_QUERY:
-		{
-			if (CheckAuth(conn) != true) {break; }
-			if (data[J_PF_QUERY] == "FULLSET")
-			{
-				Server::LoadFiles();
-				json pkt;
-				pkt[J_PF_HEADER] = J_CH::FILES_QUERY;
-				pkt[J_PF_QUERY] = "FULLSET RESPONSE";
-				pkt[J_PF_DATA] = File_JSON_Data;
-				std::string dmp = pkt.dump();
-				Interface->SendMessageToConnection(conn, dmp.c_str(), (uint32)dmp.length(), k_nSteamNetworkingSend_Reliable, nullptr);
-				break;
-			}
-		}
+	//	case J_CH::EPISODE_QUERY:
+	//	{
+	//		if (CheckAuth(conn) != true) { break; }
+	//		if (data[J_PF_QUERY] == "FULLSET")
+	//		{
+	//			Server::LoadEpisodes();
+	//			json pkt;
+	//			pkt[J_PF_HEADER] = J_CH::EPISODE_QUERY;
+	//			pkt[J_PF_QUERY] = "FULLSET RESPONSE";
+	//			pkt[J_PF_DATA] = Episode_JSON_Data;
+	//			std::string dmp = pkt.dump();
+	//			Interface->SendMessageToConnection(conn, dmp.c_str(), (uint32)dmp.length(), k_nSteamNetworkingSend_Reliable, nullptr);
+	//			break;
+	//		}
+	//	}
 
-		case J_CH::EPISODE_EDIT:
-		{
-			if (CheckAuth(conn) != true) { break; }
-			J_FC Operation = (data[J_PF_OPERATION]);
-			switch (Operation)
-			{
-				case J_FC::EPISODE_NEW:
-				{
-					JATAPT::COMMON::J_EP ep = JATAPT::COMMON::Deserialize_Episode(data[J_PF_DATA]);
-					struct tm ep_date;
-					ParseRFC822(ep.publication_date.c_str(), &ep_date);
-					const time_t t_now = std::time(0);
-					struct tm* time_now = localtime(&t_now);
-					const time_t t_episode = tm_to_time_t(&ep_date);
-					string t_string = "";
+	//	case J_CH::FILES_QUERY:
+	//	{
+	//		if (CheckAuth(conn) != true) {break; }
+	//		if (data[J_PF_QUERY] == "FULLSET")
+	//		{
+	//			Server::LoadFiles();
+	//			json pkt;
+	//			pkt[J_PF_HEADER] = J_CH::FILES_QUERY;
+	//			pkt[J_PF_QUERY] = "FULLSET RESPONSE";
+	//			pkt[J_PF_DATA] = File_JSON_Data;
+	//			std::string dmp = pkt.dump();
+	//			Interface->SendMessageToConnection(conn, dmp.c_str(), (uint32)dmp.length(), k_nSteamNetworkingSend_Reliable, nullptr);
+	//			break;
+	//		}
+	//	}
 
-					if (t_episode > t_now)
-					{
-						if ((ep_date.tm_yday - time_now->tm_yday) > 0) { t_string += to_string(ep_date.tm_yday - time_now->tm_yday) + std::string(" Days"); }
-						else {
-							bool hours = false;
-							if ((t_episode - t_now) >= (60 * 60)) { 
-								t_string += to_string((int)ceil((t_episode - t_now) / (60 * 60))) + std::string(" Hours"); hours = true; 
-								int hour_calc = ceil((t_episode - t_now) / (60 * 60));
-								t_string += " And ";
-								t_string += to_string((int)ceil(((t_episode - t_now) - (hour_calc * 60 * 60))/(60))) + std::string(" Minutes");
-							}
-							if ((t_episode - t_now) <= (60 * 60)) {if (hours == true) { t_string += " And "; } t_string += to_string((int)ceil((t_episode - t_now) / (60))) + std::string(" Minutes");}
-						}
-					}
-					else {
-						t_string = "0 Seconds";
-					}
-					
-					Alcubierre::Debug::Log::Msg("JATAPT", "Episode : [%s] set to publish in %s", ep.title.c_str(), t_string.c_str());
-					//Spooled_Episodes.push_back(ep);
-					Save_Spooled_Episodes();
-					break;
-				}
-				case J_FC::EPISODE_EXISTING:
-				{
-					JATAPT::COMMON::J_EP ep = JATAPT::COMMON::Deserialize_Episode(data[J_PF_DATA]);
-					Write_Episode_To_File(ep, true);
-					break;
-				}
-				case J_FC::EPISODE_DELETE:
-				{
-					break;
-				}
-			}
-		}
+	//	case J_CH::EPISODE_EDIT:
+	//	{
+	//		if (CheckAuth(conn) != true) { break; }
+	//		J_FC Operation = (data[J_PF_OPERATION]);
+	//		switch (Operation)
+	//		{
+	//			case J_FC::EPISODE_NEW:
+	//			{
+	//				JATAPT::COMMON::J_EP ep = JATAPT::COMMON::Deserialize_Episode(data[J_PF_DATA]);
+	//				struct tm ep_date;
+	//				ParseRFC822(ep.publication_date.c_str(), &ep_date);
+	//				const time_t t_now = std::time(0);
+	//				struct tm* time_now = localtime(&t_now);
+	//				const time_t t_episode = tm_to_time_t(&ep_date);
+	//				string t_string = "";
 
-	}
+	//				if (t_episode > t_now)
+	//				{
+	//					if ((ep_date.tm_yday - time_now->tm_yday) > 0) { t_string += to_string(ep_date.tm_yday - time_now->tm_yday) + std::string(" Days"); }
+	//					else {
+	//						bool hours = false;
+	//						if ((t_episode - t_now) >= (60 * 60)) { 
+	//							t_string += to_string((int)ceil((t_episode - t_now) / (60 * 60))) + std::string(" Hours"); hours = true; 
+	//							int hour_calc = ceil((t_episode - t_now) / (60 * 60));
+	//							t_string += " And ";
+	//							t_string += to_string((int)ceil(((t_episode - t_now) - (hour_calc * 60 * 60))/(60))) + std::string(" Minutes");
+	//						}
+	//						if ((t_episode - t_now) <= (60 * 60)) {if (hours == true) { t_string += " And "; } t_string += to_string((int)ceil((t_episode - t_now) / (60))) + std::string(" Minutes");}
+	//					}
+	//				}
+	//				else {
+	//					t_string = "0 Seconds";
+	//				}
+	//				
+	//				Alcubierre::Debug::Log::Msg("JATAPT", "Episode : [%s] set to publish in %s", ep.title.c_str(), t_string.c_str());
+	//				//Spooled_Episodes.push_back(ep);
+	//				Save_Spooled_Episodes();
+	//				break;
+	//			}
+	//			case J_FC::EPISODE_EXISTING:
+	//			{
+	//				JATAPT::COMMON::J_EP ep = JATAPT::COMMON::Deserialize_Episode(data[J_PF_DATA]);
+	//				Write_Episode_To_File(ep, true);
+	//				break;
+	//			}
+	//			case J_FC::EPISODE_DELETE:
+	//			{
+	//				break;
+	//			}
+	//		}
+	//	}
 
+	//}
 }
 
 void Server::LoadEpisodes()
 {
-	std::vector<JATAPT::COMMON::J_EP> eps = std::vector<JATAPT::COMMON::J_EP>();
+	//todo
+
+	/*std::vector<JATAPT::COMMON::J_EP> eps = std::vector<JATAPT::COMMON::J_EP>();
 	eps = JATAPT::COMMON::Serialize_Episodes(config.xml_path,config.audio_web_prefix);
 	Server::Live_Episodes = eps;
-	Episode_JSON_Data = JATAPT::COMMON::Packetize_Episodes(eps);
+	Episode_JSON_Data = JATAPT::COMMON::Packetize_Episodes(eps);*/
 }
 
 struct {
@@ -584,9 +614,14 @@ struct {
 void Server::LoadFiles()
 {
 	const char* file_dir = config.audio_path;
+
+	//check if directory exists
 	struct stat buff;
 	int result = stat(file_dir, &buff);
 	if (result != 0) { Alcubierre::Exit(-666); }
+
+	//todo generalize this for anyone to use and not just splitview / flickview
+	//todo validate everything
 	std::vector<char*> split_view_files = Alcubierre::File::Util::ListDir(config.audio_path);
 	split_view_files = Alcubierre::File::Util::Strip_FileTypes(split_view_files, ".mp3", true);
 	std::sort(split_view_files.begin(), split_view_files.end(), alphanum_comp_func);
@@ -596,7 +631,8 @@ void Server::LoadFiles()
 	std::sort(flick_view_files.begin(), flick_view_files.end(), alphanum_comp_func);
 	Files = charVector_Add(split_view_files, flick_view_files);
 
-	nlohmann::json j;
+
+	/*nlohmann::json j;
 
 	for (int i = 0; i <Files.size(); i++)
 	{
@@ -605,7 +641,7 @@ void Server::LoadFiles()
 
 	std::string data = j.dump();
 	File_JSON_Data = new char[data.size()];
-	strcpy(File_JSON_Data, data.c_str());
+	strcpy(File_JSON_Data, data.c_str());*/
 
 }
 

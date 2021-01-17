@@ -70,6 +70,13 @@ struct Episode_Spool
 	}
 };
 
+struct Stored_Server_Data
+{
+	Episode_Spool Spool;
+	JATAPT::COMMON::J_EP_SET Stored_Episodes;
+	JATAPT::COMMON::J_FILE_SET Stored_Files;
+};
+
 class Server : private ISteamNetworkingSocketsCallbacks
 {
 private:
@@ -77,14 +84,12 @@ private:
 	HSteamListenSocket ListenSock;
 	ISteamNetworkingSockets* Interface;
 	HSteamNetPollGroup PollGroup;
+	
 	std::map<HSteamNetConnection, Client_t> Client_List;
 	std::vector<blob> blobs = std::vector<blob>();
 	std::map<char*, int> blob_map = std::map<char*, int>();
 
-	std::vector<JATAPT::COMMON::J_EP> Live_Episodes;
-
-	//spool stuff
-	Episode_Spool episode_spool;
+	Stored_Server_Data Data;
 
 	bool Add_To_Spool(JATAPT::COMMON::J_EP ep);
 	bool Remove_From_Spool(JATAPT::COMMON::J_EP ep);
@@ -93,16 +98,10 @@ private:
 	void Load_Spooled_Episodes();
 	void Check_Spooled_Episodes();
 
-	std::vector<char*> Files;
-
-	const char* Episode_JSON_Data;
-	char* File_JSON_Data;
-
 	void LoadEpisodes();
 	void LoadFiles();
-	bool Write_Episode_To_File(JATAPT::COMMON::J_EP ep, bool existing = false);
 
-	
+	bool Write_Episode_To_File(JATAPT::COMMON::J_EP ep, bool existing = false);
 
 	void PollIncoming();
 	virtual void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* pInfo) override;

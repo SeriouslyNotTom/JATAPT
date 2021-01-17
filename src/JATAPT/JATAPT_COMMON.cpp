@@ -35,8 +35,17 @@ std::map<char, char*> XMLSpecialChars =
 	{39, "&apos;"}
 };
 
-int JATAPT::COMMON::TitleDescriptionSubtitleFilePubDateSummary = JATAPTEpisodeVerifyState_NoTitle | JATAPTEpisodeVerifyState_NoDescription | JATAPTEpisodeVerifyState_NoSubtitle | JATAPTEpisodeVerifyState_NoFile | JATAPTEpisodeVerifyState_NoPubDate | JATAPTEpisodeVerifyState_NoSummary;
-int JATAPT::COMMON::GuidDUration = JATAPTEpisodeVerifyState_NoGuid | JATAPTEpisodeVerifyState_NoDuration;
+int JATAPT::COMMON::JATAPTEpisodeVerifyState_TitleDescriptionSubtitleSummaryFileNameFilePathPubDate =
+
+	JATAPTEpisodeVerifyState_NoEpTitle |
+	JATAPTEpisodeVerifyState_NoEpDescription |
+	JATAPTEpisodeVerifyState_NoEpSubtitle |
+	JATAPTEpisodeVerifyState_NoEpSummary |
+
+	JATAPTEpisodeVerifyState_NoFileName |
+	JATAPTEpisodeVerifyState_NoFilePath |
+
+	JATAPTEpisodeVerifyState_NoPubDate;
 
 std::vector<JATAPT::COMMON::J_EP> JATAPT::COMMON::Serialize_Episodes(const char* xml_file, const char* audio_web_prefix)
 {
@@ -45,7 +54,9 @@ std::vector<JATAPT::COMMON::J_EP> JATAPT::COMMON::Serialize_Episodes(const char*
 	std::vector<JATAPT::COMMON::J_EP> eps = std::vector <JATAPT::COMMON::J_EP>();
 	JATAPT::COMMON::J_EP ep;
 
-	pugi::xml_document doc;
+	//TODO: [JATAPT] xml serializer
+
+	/*pugi::xml_document doc;
 	pugi::xml_parse_result result = doc.load_file(xml_file);
 
 	pugi::xml_node channel_node = doc.child("rss").child("channel");
@@ -71,55 +82,53 @@ std::vector<JATAPT::COMMON::J_EP> JATAPT::COMMON::Serialize_Episodes(const char*
 		ep.publication_date = item.child("pubDate").text().as_string();
 
 		eps.push_back(ep);
-	}
+	}*/
 
 	Alcubierre::Debug::Log::Msg("Jatapt", "Done");
 	return eps;
 }
 
-const char* JATAPT::COMMON::Packetize_Episode(JATAPT::COMMON::J_EP Episode)
-{
-	nlohmann::json j;
+//const char* JATAPT::COMMON::Packetize_Episode(JATAPT::COMMON::J_EP Episode)
+//{
+//	nlohmann::json j;
+//
+//	j[Episode.guid]["title"] = Episode.title;
+//	j[Episode.guid]["description"] = Episode.description;
+//	j[Episode.guid]["summary"] = Episode.summary;
+//	j[Episode.guid]["subtitle"] = Episode.subtitle;
+//	j[Episode.guid]["audio_url"] = Episode.audio_url;
+//	j[Episode.guid]["audio_duration"] = Episode.audio_duration;
+//	j[Episode.guid]["guid"] = Episode.guid;
+//	j[Episode.guid]["publication_date"] = Episode.publication_date;
+//
+//	std::string json_data = j.dump();
+//	char* json_str = new char[json_data.size()];
+//	strcpy(json_str, json_data.c_str());
+//	return json_str;
+//}
 
-	j[Episode.guid]["title"] = Episode.title;
-	j[Episode.guid]["description"] = Episode.description;
-	j[Episode.guid]["summary"] = Episode.summary;
-	j[Episode.guid]["subtitle"] = Episode.subtitle;
-	j[Episode.guid]["audio_url"] = Episode.audio_url;
-	j[Episode.guid]["audio_duration"] = Episode.audio_duration;
-	j[Episode.guid]["guid"] = Episode.guid;
-	j[Episode.guid]["publication_date"] = Episode.publication_date;
-
-	std::string json_data = j.dump();
-	char* json_str = new char[json_data.size()];
-	strcpy(json_str, json_data.c_str());
-	return json_str;
-}
-
-const char* JATAPT::COMMON::Packetize_Episodes(std::vector<JATAPT::COMMON::J_EP> eps)
-{
-	Alcubierre::Debug::Log::Msg("Jatapt", "Packetizing Episodes..");
-	nlohmann::json j;
-
-	for (int i = 0; i < eps.size(); i++)
-	{
-		J_EP ep = eps[i];
-		j["episodes"][i]["title"] = ep.title;
-		j["episodes"][i]["description"] = ep.description;
-		j["episodes"][i]["summary"] = ep.summary;
-		j["episodes"][i]["subtitle"] = ep.subtitle;
-		j["episodes"][i]["audio_url"] = ep.audio_url;
-		j["episodes"][i]["audio_duration"] = ep.audio_duration;
-		j["episodes"][i]["guid"] = ep.guid;
-		j["episodes"][i]["publication_date"] = ep.publication_date;
-	}
-
-	std::string json_data = j.dump();
-	Alcubierre::Debug::Log::Msg("Jatapt", "Done");
-	return json_data.c_str();
-}
-
-using namespace rapidjson;
+//const char* JATAPT::COMMON::Packetize_Episodes(std::vector<JATAPT::COMMON::J_EP> eps)
+//{
+//	Alcubierre::Debug::Log::Msg("Jatapt", "Packetizing Episodes..");
+//	nlohmann::json j;
+//
+//	for (int i = 0; i < eps.size(); i++)
+//	{
+//		J_EP ep = eps[i];
+//		j["episodes"][i]["title"] = ep.title;
+//		j["episodes"][i]["description"] = ep.description;
+//		j["episodes"][i]["summary"] = ep.summary;
+//		j["episodes"][i]["subtitle"] = ep.subtitle;
+//		j["episodes"][i]["audio_url"] = ep.audio_url;
+//		j["episodes"][i]["audio_duration"] = ep.audio_duration;
+//		j["episodes"][i]["guid"] = ep.guid;
+//		j["episodes"][i]["publication_date"] = ep.publication_date;
+//	}
+//
+//	std::string json_data = j.dump();
+//	Alcubierre::Debug::Log::Msg("Jatapt", "Done");
+//	return json_data.c_str();
+//}
 
 //std::vector<JATAPT::COMMON::J_EP> JATAPT::COMMON::Deserialize_Episodes(char* JSON_DATA)
 //{
@@ -132,112 +141,121 @@ using namespace rapidjson;
 //	return eps;
 //}
 
+//std::vector<JATAPT::COMMON::J_EP> JATAPT::COMMON::Deserialize_Episodes(char* JSON_DATA)
+//{
+//	std::vector<JATAPT::COMMON::J_EP> eps;
+//	nlohmann::json k = nlohmann::json::parse(JSON_DATA);
+//
+//	for (auto& element : k["episodes"])
+//	{
+//		J_EP ep;
+//		std::string title = element["title"];
+//		ep.title = title;
+//
+//		std::string description = element["description"];
+//		ep.description = description;
+//
+//		std::string summary = element["summary"];
+//		ep.summary = summary;
+//
+//		std::string subtitle = element["subtitle"];
+//		ep.subtitle = subtitle;
+//
+//		std::string audio_url = element["audio_url"];
+//		ep.audio_url = audio_url;
+//
+//		std::string audio_duration = element["audio_duration"];
+//		ep.audio_duration = audio_duration;
+//
+//		std::string guid = element["guid"];
+//		ep.guid = guid;
+//
+//		std::string publication_date = element["publication_date"];
+//		ep.publication_date = publication_date;
+//
+//		eps.push_back(ep);
+//	}
+//
+//	return eps;
+//}
 
+//JATAPT::COMMON::J_EP JATAPT::COMMON::Deserialize_Episode(std::string json_data)
+//{
+//	auto element = nlohmann::json::parse(json_data);
+//
+//	J_EP ep;
+//	std::string title = element["title"];
+//	ep.title = title;
+//
+//	std::string description = element["description"];
+//	ep.description = description;
+//
+//	std::string summary = element["summary"];
+//	ep.summary = summary;
+//
+//	std::string subtitle = element["subtitle"];
+//	ep.subtitle = subtitle;
+//
+//	std::string audio_url = element["audio_url"];
+//	ep.audio_url = audio_url;
+//
+//	std::string publication_date = element["publication_date"];
+//	ep.publication_date = publication_date;
+//
+//	if(element.find("guid")!=element.end())
+//	{
+//		std::string guid = element["guid"];
+//		ep.guid = guid;
+//	}
+//
+//	return ep;
+//}
 
-std::vector<JATAPT::COMMON::J_EP> JATAPT::COMMON::Deserialize_Episodes(char* JSON_DATA)
-{
-	std::vector<JATAPT::COMMON::J_EP> eps;
-	nlohmann::json k = nlohmann::json::parse(JSON_DATA);
-
-	for (auto& element : k["episodes"])
-	{
-		J_EP ep;
-		std::string title = element["title"];
-		ep.title = title;
-
-		std::string description = element["description"];
-		ep.description = description;
-
-		std::string summary = element["summary"];
-		ep.summary = summary;
-
-		std::string subtitle = element["subtitle"];
-		ep.subtitle = subtitle;
-
-		std::string audio_url = element["audio_url"];
-		ep.audio_url = audio_url;
-
-		std::string audio_duration = element["audio_duration"];
-		ep.audio_duration = audio_duration;
-
-		std::string guid = element["guid"];
-		ep.guid = guid;
-
-		std::string publication_date = element["publication_date"];
-		ep.publication_date = publication_date;
-
-		eps.push_back(ep);
-	}
-
-	return eps;
-}
-
-JATAPT::COMMON::J_EP JATAPT::COMMON::Deserialize_Episode(std::string json_data)
-{
-	auto element = nlohmann::json::parse(json_data);
-
-	J_EP ep;
-	std::string title = element["title"];
-	ep.title = title;
-
-	std::string description = element["description"];
-	ep.description = description;
-
-	std::string summary = element["summary"];
-	ep.summary = summary;
-
-	std::string subtitle = element["subtitle"];
-	ep.subtitle = subtitle;
-
-	std::string audio_url = element["audio_url"];
-	ep.audio_url = audio_url;
-
-	std::string publication_date = element["publication_date"];
-	ep.publication_date = publication_date;
-
-	if(element.find("guid")!=element.end())
-	{
-		std::string guid = element["guid"];
-		ep.guid = guid;
-	}
-
-	return ep;
-}
-
-bool JATAPT::COMMON::Check_Episode_Fully_Defined(JATAPT::COMMON::J_EP Episode)
-{
-	//i know i can use reflection to do this but if yall know any other way that is less lines than this; please hit me up. -Tom
-	if (Episode.title == "") { return false; }
-	if (Episode.description == "") { return false; }
-	if (Episode.summary == "") { return false; }
-	if (Episode.subtitle == "") { return false; }
-	if (Episode.audio_url == "") { return false; }
-	if (Episode.audio_duration == "") { return false; }
-	if (Episode.guid == "") { return false; }
-	if (Episode.publication_date == "") { return false; }
-	return true;
-}
+//bool JATAPT::COMMON::Check_Episode_Fully_Defined(JATAPT::COMMON::J_EP Episode)
+//{
+//	//i know i can use reflection to do this but if yall know any other way that is less lines than this; please hit me up. -Tom
+//	if (Episode.title == "") { return false; }
+//	if (Episode.description == "") { return false; }
+//	if (Episode.summary == "") { return false; }
+//	if (Episode.subtitle == "") { return false; }
+//	if (Episode.audio_url == "") { return false; }
+//	if (Episode.audio_duration == "") { return false; }
+//	if (Episode.guid == "") { return false; }
+//	if (Episode.publication_date == "") { return false; }
+//	return true;
+//}
 
 JATAPT::COMMON::JATAPTEpisodeVerifyState_ JATAPT::COMMON::Verify_Episode(J_EP Episode)
 {
 	int state = JATAPTEpisodeVerifyState_Pass;
 
-	if (Episode.title == "" | (Episode.title.size()<=0)) { state = state | JATAPTEpisodeVerifyState_NoTitle; }
-	if (Episode.description == "" | (Episode.description.size()<=0)) { state = state | JATAPTEpisodeVerifyState_NoDescription; }
-	if (Episode.summary == "" | (Episode.summary.size() <=0)) { state = state | JATAPTEpisodeVerifyState_NoSummary; }
-	if (Episode.subtitle == "" | (Episode.subtitle.size() <=0)) { state = state | JATAPTEpisodeVerifyState_NoSubtitle; }
-	if (Episode.audio_url == "" | (Episode.audio_url.size() <= 0)) { state = state | JATAPTEpisodeVerifyState_NoFile; }
-	if (Episode.audio_duration == "" | (Episode.audio_duration.size() <= 0)) { state = state | JATAPTEpisodeVerifyState_NoDuration; }
+	//text stuff
+	if (Episode.title == "" | (Episode.title.size()<=0)) { state = state | JATAPTEpisodeVerifyState_NoEpTitle; }
+	if (Episode.description == "" | (Episode.description.size()<=0)) { state = state | JATAPTEpisodeVerifyState_NoEpDescription; }
+	if (Episode.summary == "" | (Episode.summary.size() <=0)) { state = state | JATAPTEpisodeVerifyState_NoEpSummary; }
+	if (Episode.subtitle == "" | (Episode.subtitle.size() <=0)) { state = state | JATAPTEpisodeVerifyState_NoEpSubtitle; }
+
+	//file stuff
+	if (Episode.episode_file.file_name == "" | (Episode.episode_file.file_name.size() <= 0)) { state = state | JATAPTEpisodeVerifyState_NoFileName; }
+	if (Episode.episode_file.file_duration_seconds == 0 | (Episode.episode_file.file_duration_seconds==-1)) { state = state | JATAPTEpisodeVerifyState_NoFileDuration; }
+	if (Episode.episode_file.file_path == "" | (Episode.episode_file.file_path.size() <=0)) { state = state | JATAPTEpisodeVerifyState_NoFilePath; }
+	if (Episode.episode_file.file_size == 0 | (Episode.episode_file.file_size == -1)) { state = state | JATAPTEpisodeVerifyState_NoFileSize; }
+
+	//other stuff
 	if (Episode.guid == "" | (Episode.guid.size() <= 0)) { state = state | JATAPTEpisodeVerifyState_NoGuid; }
-	if (Episode.publication_date == "" | (Episode.publication_date.size() <= 0)) { state = state | JATAPTEpisodeVerifyState_NoPubDate; }
+	if (Episode.episode_publication_time == 0 | (Episode.episode_publication_time == -1)) { state = state | JATAPTEpisodeVerifyState_NoPubDate; }
 
 	return (JATAPTEpisodeVerifyState_)state;
 }
 
+/// <summary>
+/// try to parse a string date i.e. ("Thu, 10 May 2020 00:00:01 GMT") into a time struct
+/// date has to be in RFC822 format obviously
+/// </summary>
+/// <param name="string">RFC822 Date/Time string</param>
+/// <param name="time_struct">time struct to be filled with parsed time</param>
 void JATAPT::COMMON::ParseRFC822(const char* string, tm* time_struct)
 {
-
-	//Thu, 10 May 2020 00:00:01 GMT
 
 	char* s_day = new char[3];
 	char* s_month = new char[3];
@@ -257,11 +275,12 @@ void JATAPT::COMMON::ParseRFC822(const char* string, tm* time_struct)
 	time_struct->tm_wday = DayMap[std::string(s_day)];
 	time_struct->tm_mon = MonthMap[std::string(s_month)];
 
-	//i kid you not wrapping this input in a std::string makes it work. if you don't sometimes it just doesnt
+	
 	int t_hour = 0;
 	int t_min = 0;
 	int t_sec = 0;
 
+	//i kid you not wrapping this input in a std::string makes it work. if you don't sometimes it just doesnt
 	sscanf(std::string(s_time).c_str(), "%d:%d:%d", &t_hour, &t_min, &t_sec);
 
 	time_struct->tm_hour = t_hour;
@@ -278,6 +297,11 @@ void JATAPT::COMMON::ParseRFC822(const char* string, tm* time_struct)
 	time_struct->tm_yday = ydays;
 }
 
+/// <summary>
+/// Convert a tm time struct into an rfc822 date/time string
+/// </summary>
+/// <param name="time_struct">tm time struct to be converted</param>
+/// <returns>returned string of rfc822 date/time</returns>
 char* JATAPT::COMMON::SerializeRFC822(tm* time_struct)
 {
 	char* str = new char[1024];
@@ -288,6 +312,11 @@ char* JATAPT::COMMON::SerializeRFC822(tm* time_struct)
 	return output;
 }
 
+/// <summary>
+/// replace special characters (& < > " ') from input string into their xml safe counter parts
+/// </summary>
+/// <param name="input_Sequence">string to make safe</param>
+/// <returns>string that has been made XML safe</returns>
 char* JATAPT::COMMON::ParseXMLSpecialCharacter(char* input_Sequence)
 {
 	char* final_str = "";

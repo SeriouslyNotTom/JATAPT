@@ -31,7 +31,6 @@
 #include <tinyxml2.h>
 #include <Alcubierre/Libraries/Utilities/RandomUtils.h>
 #include <signal.h>
-#include <Experiments/testser.cpp>
 #include <JATAPT/Network/Packets.h>
 
 using namespace Alcubierre::Engine::Window;
@@ -41,56 +40,7 @@ using namespace JATAPT::COMMON::NET;
 int main(int argc, char* argv[])
 {
 
-	JATAPT::COMMON::J_EP ep1;
-	ep1.title = "title";
-	ep1.description = "description";
-	JATAPT::COMMON::NET::single_episode_packet sepkt1;
-	sepkt1.packet_info.packetid = rand();
-	sepkt1.packet_info.sent_time = std::time(0);
-	sepkt1.packet_info.crc = 123456;
-	sepkt1.opcode = opcode_e::S_REPLY;
-	sepkt1.statuscode = statuscode_e::OK;
-	sepkt1.ep = ep1;
-
-	JATAPT::COMMON::J_EP ep2;
-	ep2.title = "title2";
-	ep2.description = "description2";
-	JATAPT::COMMON::NET::single_episode_packet sepkt2;
-	sepkt2.packet_info.packetid = rand();
-	sepkt2.packet_info.sent_time = std::time(0);
-	sepkt2.packet_info.crc = 123456;
-	sepkt2.opcode = opcode_e::S_REPLY;
-	sepkt2.statuscode = statuscode_e::OK;
-	sepkt2.ep = ep2;
-
-	JATAPT::COMMON::J_EP ep3;
-	ep3.title = "title3";
-	ep3.description = "description3";
-	JATAPT::COMMON::NET::single_episode_packet sepkt3;
-	sepkt3.packet_info.packetid = rand();
-	sepkt3.packet_info.sent_time = std::time(0);
-	sepkt3.packet_info.crc = 123456;
-	sepkt3.opcode = opcode_e::S_REPLY;
-	sepkt3.statuscode = statuscode_e::OK;
-	sepkt3.ep = ep3;
-
-	std::vector<JATAPT::COMMON::J_EP> jeps;
-	jeps.push_back(ep1);
-	jeps.push_back(ep2);
-	jeps.push_back(ep3);
-
-	std::ofstream ss("out.text", std::ios::binary);
-	cereal::BinaryOutputArchive oarchive(ss);
-	oarchive(jeps);
-	ss.flush();
-	ss.close();
-
-	std::ifstream is("out.text", std::ios::binary);
-	cereal::BinaryInputArchive iarchive(is);
-	std::vector<JATAPT::COMMON::J_EP> jeps2;
-	iarchive(jeps2);
-
-	test();
+	Alcubierre::File::Util::AddPath("test1/", "file.util");
 
 	try
 	{

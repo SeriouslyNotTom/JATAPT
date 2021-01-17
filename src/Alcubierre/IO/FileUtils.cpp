@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <mio/mmap.hpp>
+#include <Alcubierre/Libraries/Utilities/RandomUtils.h>
 
 
 #ifdef _WIN32
@@ -85,12 +86,30 @@ std::vector<char*> Alcubierre::File::Util::ListDir(const char* Path, AlcubierreL
 	std::vector<char*> results;
 	std::vector<char*> subdirs;
 
-	struct dirent *file_h;
-	DIR *dir_h = opendir(Path);
-	while ((file_h = readdir(dir_h)) != NULL)
+	//need to know current dirrectory for adding the path to recursions
+	char* cur_path;
+	cur_path = (char*)Path;
+
+	//for directory recursion
+	bool first_run = true;
+
+	while (subdirs.size() > 0 | first_run)
 	{
-		switch (file_h->d_type)
+		first_run = false;
+
+		if (o_Recurse & subdirs.size() > 0)
 		{
+			//cur_path = 
+		}
+
+		//lookup dirent if you are confused, i know i was
+		struct dirent* file_h;
+		DIR* dir_h = opendir(Path);
+		while ((file_h = readdir(dir_h)) != NULL)
+		{
+			switch (file_h->d_type)
+			{
+				//dirent switches
 			case DT_DIR:
 			{
 				//don't use costly string compares if we are not even using any of the directory options in the first place
@@ -115,8 +134,12 @@ std::vector<char*> Alcubierre::File::Util::ListDir(const char* Path, AlcubierreL
 				break;
 			}
 
+			}
 		}
+
 	}
+
+	
 
 	//todo for release
 	/*if (o_Recurse & subdirs.size()>0)
@@ -229,4 +252,46 @@ std::vector<char*> Alcubierre::File::Util::Strip_FileTypes(std::vector<char*> in
 
 	return out_vector;
 }
+
+char* Alcubierre::File::Util::ConformPath(char* path, char* path_divider)
+{
+	return nullptr;
+}
+
+char* Alcubierre::File::Util::AddPath(char* path1, char* path2,bool replace_divider, char* path_divider)
+{
+	char* final_path;
+	std::string path1_string(path1);
+	char* path1_check_part = new char[2];
+	strncpy(path1_check_part, path1_string.c_str()+(path1_string.size())-2, 2);
+	if ( (path1_check_part[0]=='\\'&path1_check_part[1]=='\\') | path1_check_part[1] == '/' | path1_check_part[1] == '\\')
+	{
+		if (replace_divider)
+		{
+			char* fixed_string = new char[path1_string.size() * 2];
+			int final_size = 0;
+			const char* normalized_string = path1_string.c_str();
+			for (int i = 0; i <= path1_string.size(); i++)
+			{
+				char check_char = normalized_string[i];
+				//i'm checking for 3 possible path seperator seuqneces (/, \, \\)
+				//and two of them look identical from the beginning character, so after i detect the first
+				//i look ahead for the second one
+				if (check_char == '/')
+				{
+					if (normalized_string[i + 1] == '/')
+					{
+
+					}
+				}
+				if (check_char == '\\')
+				{
+
+				}
+			}
+		}
+	}
+	return final_path;
+}
+
 
