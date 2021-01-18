@@ -47,47 +47,6 @@ int JATAPT::COMMON::JATAPTEpisodeVerifyState_TitleDescriptionSubtitleSummaryFile
 
 	JATAPTEpisodeVerifyState_NoPubDate;
 
-std::vector<JATAPT::COMMON::J_EP> JATAPT::COMMON::Serialize_Episodes(const char* xml_file, const char* audio_web_prefix)
-{
-	Alcubierre::Debug::Log::Msg("Jatapt","Serializing Episodes..");
-
-	std::vector<JATAPT::COMMON::J_EP> eps = std::vector <JATAPT::COMMON::J_EP>();
-	JATAPT::COMMON::J_EP ep;
-
-	//TODO: [JATAPT] xml serializer
-
-	/*pugi::xml_document doc;
-	pugi::xml_parse_result result = doc.load_file(xml_file);
-
-	pugi::xml_node channel_node = doc.child("rss").child("channel");
-
-	for (pugi::xml_node item = channel_node.child("item"); item; item = item.next_sibling("item"))
-	{
-		ep = JATAPT::COMMON::J_EP();
-		ep.title = item.child("title").text().as_string();
-		ep.description = item.child("description").text().as_string();
-		ep.summary = item.child("itunes:summary").text().as_string();
-		ep.subtitle = item.child("itunes:subtitle").text().as_string();
-		pugi::xml_node enclosure = item.child("enclosure");
-		
-		char* audio_url = (char*)enclosure.attribute("url").value();
-		int file_name_len = strlen(audio_url) - strlen(audio_web_prefix);
-		char* trimmed_file_name = new char[file_name_len];
-		strncpy(trimmed_file_name, audio_url + (strlen(audio_url) - file_name_len), file_name_len);
-		trimmed_file_name[file_name_len] = '\0';
-		ep.audio_url = std::string(trimmed_file_name);
-
-		ep.guid = item.child("guid").text().as_string();
-		ep.audio_duration = item.child("itunes:duration").text().as_string();
-		ep.publication_date = item.child("pubDate").text().as_string();
-
-		eps.push_back(ep);
-	}*/
-
-	Alcubierre::Debug::Log::Msg("Jatapt", "Done");
-	return eps;
-}
-
 //const char* JATAPT::COMMON::Packetize_Episode(JATAPT::COMMON::J_EP Episode)
 //{
 //	nlohmann::json j;

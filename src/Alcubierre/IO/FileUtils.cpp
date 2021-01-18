@@ -4,13 +4,15 @@
 #include <dirent.h>
 #include <mio/mmap.hpp>
 #include <Alcubierre/Libraries/Utilities/RandomUtils.h>
-
+#define MINIMP3_IMPLEMENTATION
+#include <minimp3.h>
+#include <iostream>
 
 #ifdef _WIN32
 #include <windows.h>
 #include <commdlg.h>
 #include <cderr.h>
-#include <iostream>
+
 
 char* BrowseFile(char* Title, char* Filter)
 {
@@ -74,7 +76,7 @@ char* Alcubierre::File::Util::BrowseFileSingle(char* Title, char* filter)
 	return BrowseFile(Title, filter);
 }
 
-std::vector<char*> Alcubierre::File::Util::ListDir(const char* Path, AlcubierreListDirFlags dir_flags)
+std::vector<std::string> Alcubierre::File::Util::ListDir(const char* Path, AlcubierreListDirFlags dir_flags)
 {
 
 	bool o_Recurse = dir_flags & AlcubierreListDirFlags_Recurse;
@@ -83,12 +85,13 @@ std::vector<char*> Alcubierre::File::Util::ListDir(const char* Path, AlcubierreL
 	bool o_NoFiles = dir_flags & AlcubierreListDirFlags_NoFiles;
 	bool o_FullPath = dir_flags & AlcubierreListDirFlags_FullPath;
 
-	std::vector<char*> results;
-	std::vector<char*> subdirs;
+	std::vector<std::string> results;
+	std::vector<std::string> subdirs;
 
 	//need to know current dirrectory for adding the path to recursions
-	char* cur_path;
-	cur_path = (char*)Path;
+	std::string cur_path;
+	std::string cur_subdir = "";
+	cur_path = Path;
 
 	//for directory recursion
 	bool first_run = true;
@@ -99,37 +102,67 @@ std::vector<char*> Alcubierre::File::Util::ListDir(const char* Path, AlcubierreL
 
 		if (o_Recurse & subdirs.size() > 0)
 		{
-			//cur_path = 
+			if (subdirs.size() > 1)
+			{
+				std::vector<std::string> new_subdirs;
+				for (int i = 1; i <subdirs.size(); i++)
+				{
+					new_subdirs.push_back(subdirs[i]);
+				}
+				const char* new_subdir = subdirs[0].c_str();
+				cur_subdir = new_subdir;
+				cur_path = Alcubierre::File::Util::AddPath(Path, new_subdir, false);
+				subdirs = new_subdirs;
+				
+			}
+			else {
+				const char* new_subdir = subdirs[0].c_str();
+				cur_subdir = new_subdir;
+				cur_path = Alcubierre::File::Util::AddPath(Path, new_subdir, false);
+				subdirs = std::vector<std::string>();
+			}
+			
 		}
 
-		//lookup dirent if you are confused, i know i was
+		//lookup dirent if you are confused, everything gets iteratored via a single object type, and the d_type changes depending on the returned type (file, directory)
 		struct dirent* file_h;
-		DIR* dir_h = opendir(Path);
+		DIR* dir_h = opendir(cur_path.c_str());
 		while ((file_h = readdir(dir_h)) != NULL)
 		{
 			switch (file_h->d_type)
 			{
-				//dirent switches
+			
+			//dirent switches
+			//directory
 			case DT_DIR:
 			{
 				//don't use costly string compares if we are not even using any of the directory options in the first place
 				if (o_Recurse | o_ReturnFolders)
 				{
-					if (strcmp(file_h->d_name, ".") != true & file_h->d_name != "..")
+					//check if directories are "." or ".." because that's just current and previous
+					if ((file_h->d_name[0]==46) != true & std::string(file_h->d_name)!=std::string(".."))
 					{
-						if (o_Recurse) { subdirs.push_back(file_h->d_name); }
+						if (o_Recurse)
+						{ 
+							subdirs.push_back(AddPath(cur_subdir.c_str(),file_h->d_name)); 
+						}
 						if (o_ReturnFolders) { results.push_back((file_h->d_name) + '/'); }
 					}
 				}
 				break;
 			}
+			//file
 			case DT_REG:
 			{
 				if (!o_NoFiles)
 				{
-					char* file_name = new char[strlen(file_h->d_name)];
-					strcpy(file_name, file_h->d_name);
-					results.push_back(file_name);
+					if (o_AppendSubdir & cur_subdir!="")
+					{
+						results.push_back(AddPath(cur_subdir.c_str(),file_h->d_name,false));
+					}
+					else {
+						results.push_back(std::string(file_h->d_name));
+					}
 				}
 				break;
 			}
@@ -139,66 +172,14 @@ std::vector<char*> Alcubierre::File::Util::ListDir(const char* Path, AlcubierreL
 
 	}
 
-	
-
-	//todo for release
-	/*if (o_Recurse & subdirs.size()>0)
-	{
-
-
-		while (subdirs.size() > 0)
-		{
-			for (int i = 0; i <= subdirs.size(); i++)
-			{
-
-				char* sub = "";
-				strcpy(sub, Path);
-				strcpy(sub+strlen(sub), "/");
-				strcpy(sub+strlen(sub), subdirs[i]);
-
-				std::vector<char*> sub_dirs = ListDir(subdirs[i], AlcubierreListDirFlags_ReturnFolders);
-				std::vector<char*> sub_results = ListDir(subdirs[i], AlcubierreListDirFlags_None);
-
-				for (int k; i <= sub_results.size(); k++)
-				{
-					char* result = "";
-					if (o_AppendSubdir)
-					{
-						strcpy(result, subdirs[i]);
-						strcpy(result+strlen(result), "/");
-						strcpy(result + strlen(result), sub_results[k]);
-					}
-					else {
-						result = sub_results[k];
-					}
-				}
-			}
-		}
-	}*/
-
 	if (o_FullPath)
 	{
-		for (int i = 0; i <results.size(); i++)
+		std::vector<std::string> new_results;
+		for (int i = 0; i < results.size(); i++)
 		{
-			char* strResult = new char[strlen(Path)];
-			strcpy(strResult, Path);
-			//size of 1 because of spooky escape codes
-			char* strCheck = new char[1];
-			strcpy(strCheck, strResult + (strlen(strResult) - 1));
-			if (strcmp(strCheck, "\\"))
-			{
-				char* strNewResult = new char[strlen(strResult)+2];
-				strcpy(strNewResult, strResult);
-				strcat(strNewResult, "\\");
-				strResult = strNewResult;
-				strNewResult = nullptr;
-			}
-			char* strNewResult = new char[strlen(strResult) + strlen(results[i])];
-			strcpy(strNewResult, strResult);
-			strcat(strNewResult, results[i]);
-			strResult = strNewResult;
-			results[i] = strResult;
+			new_results.push_back(AddPath(Path, results[i].c_str(),false));
 		}
+		results = new_results;
 	}
 
 	return results;
@@ -253,45 +234,130 @@ std::vector<char*> Alcubierre::File::Util::Strip_FileTypes(std::vector<char*> in
 	return out_vector;
 }
 
-char* Alcubierre::File::Util::ConformPath(char* path, char* path_divider)
+const char* Alcubierre::File::Util::ConformPath(const char* path, const char* path_divider)
 {
-	return nullptr;
-}
+	char* conformed_path = new char[strlen(path)*2];
+	int conformed_path_final_len = 0;
 
-char* Alcubierre::File::Util::AddPath(char* path1, char* path2,bool replace_divider, char* path_divider)
-{
-	char* final_path;
-	std::string path1_string(path1);
-	char* path1_check_part = new char[2];
-	strncpy(path1_check_part, path1_string.c_str()+(path1_string.size())-2, 2);
-	if ( (path1_check_part[0]=='\\'&path1_check_part[1]=='\\') | path1_check_part[1] == '/' | path1_check_part[1] == '\\')
+	//doctor freeman ammo cache here
+	auto add_seq = [&]()
 	{
-		if (replace_divider)
+		for (int i = 0; i <strlen(path_divider); i++)
 		{
-			char* fixed_string = new char[path1_string.size() * 2];
-			int final_size = 0;
-			const char* normalized_string = path1_string.c_str();
-			for (int i = 0; i <= path1_string.size(); i++)
-			{
-				char check_char = normalized_string[i];
-				//i'm checking for 3 possible path seperator seuqneces (/, \, \\)
-				//and two of them look identical from the beginning character, so after i detect the first
-				//i look ahead for the second one
-				if (check_char == '/')
-				{
-					if (normalized_string[i + 1] == '/')
-					{
+			conformed_path[conformed_path_final_len] = path_divider[i];
+			conformed_path_final_len++;
+		}
+	};
 
+	for (int i = 0; i <strlen(path); i++)
+	{
+		char check_char = path[i];
+		if (check_char == '/')
+		{
+			add_seq();
+		}
+		else {
+			if (check_char == '\\')
+			{
+				if (i != strlen(path) - 1) {
+					if (path[i + 1] == '\\')
+					{
+						i++;
+						add_seq();
 					}
 				}
-				if (check_char == '\\')
-				{
-
+				else {
+					add_seq();
 				}
 			}
+			else {
+				conformed_path[conformed_path_final_len] = path[i];
+				conformed_path_final_len++;
+			}
 		}
+		
 	}
+
+	char* final_path = new char[conformed_path_final_len];
+	strncpy(final_path, conformed_path, conformed_path_final_len);
+	final_path[conformed_path_final_len] = '\0';
+
 	return final_path;
 }
 
+std::string Alcubierre::File::Util::AddPath(const char* path1, const char* path2, bool replace_divider, const char* path_divider)
+{
+	char* working_path1;
+	char* working_path2;
+	std::string final_path;
+	
+	if (replace_divider) { working_path1 = (char*)ConformPath(path1, path_divider); working_path2 = (char*)ConformPath(path2, path_divider); }
+	else 
+	{ 
+		working_path1 = (char*)path1;
+		working_path2 = (char*)path2;
+	}
 
+	char check_char1 = working_path1[strlen(working_path1)-1];
+	char check_char2 = working_path2[0];
+
+	if (check_char1==path_divider[0])
+	{
+		if (check_char2 == path_divider[0])
+		{
+			int path_divider_len = strlen(path_divider);
+			int path2_len = strlen(working_path2);
+			char* conformed_string = new char[path2_len - path_divider_len];
+			memcpy(conformed_string, working_path2 + path_divider_len, (path2_len - path_divider_len));
+			conformed_string[path2_len-path_divider_len] = '\0';
+			final_path = std::string(working_path1) + std::string(conformed_string);
+		}
+		else {
+			final_path = std::string(working_path1) + std::string(working_path2);
+		}
+	}
+	else {
+		if (check_char2 == path_divider[0])
+		{
+			final_path = std::string(working_path1) + std::string(working_path2);
+		}
+		else {
+			final_path = std::string(working_path1) + std::string(path_divider) + std::string(working_path2);
+		}
+		
+	}
+
+	return final_path;
+}
+
+int Alcubierre::File::Util::Mp3FileDuration(const char* path1)
+{
+
+	struct stat buff;
+	int result = stat(path1, &buff);
+	if (result==-1) { throw Mp3FileDuration_Exception_FileDoesNotExist(); }
+
+	uint8_t* file_buffer = new uint8_t[16384];
+	mio::mmap_source mmap(path1, 0, 16384);
+	memcpy(file_buffer, mmap.data(), 16384);
+	mmap.unmap();
+
+	static mp3dec_t mp3d;
+	mp3dec_init(&mp3d);
+	mp3dec_frame_info_t info;
+	short pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
+
+	//decode to get info
+	int samples = mp3dec_decode_frame(&mp3d, file_buffer, 16384, pcm, &info);
+
+	//i don't know where this offset comes from but it works
+	int offset = 71;
+
+	//duration is audio size divided by bitrate
+	int file_seconds = (((buff.st_size+info.frame_offset)*8/1024) / info.bitrate_kbps)+offset;
+
+	int minutes = floor(file_seconds / 60);
+	int seconds = file_seconds - (minutes * 60);
+
+	return file_seconds;
+}

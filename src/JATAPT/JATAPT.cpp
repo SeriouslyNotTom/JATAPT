@@ -40,8 +40,6 @@ using namespace JATAPT::COMMON::NET;
 int main(int argc, char* argv[])
 {
 
-	Alcubierre::File::Util::AddPath("test1/", "file.util");
-
 	try
 	{
 		bool ServerMode = false;

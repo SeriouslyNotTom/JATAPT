@@ -107,7 +107,7 @@ private:
 	virtual void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* pInfo) override;
 	void ProcessCommand(const char* pkt, HSteamNetConnection conn);
 	bool CheckAuth(HSteamNetConnection conn, bool boot = false);
-	void TryAuth(HSteamNetConnection conn);
+	//void TryAuth(HSteamNetConnection conn);
 
 public:
 	void Run();

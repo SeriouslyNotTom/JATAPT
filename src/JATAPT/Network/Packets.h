@@ -65,6 +65,21 @@ namespace JATAPT
 
 			};
 
+			class network_transfer_packet : public packet_base
+			{
+			public:
+				std::string packet_handle = "jt_network_transfer_packet";
+				packet_base stored_packet;
+				std::string stored_packet_handle;
+
+				template<class Archive>
+				void serialize(Archive& ar)
+				{
+					packet_base::serialize(ar);
+					ar(stored_packet, stored_packet_handle);
+				}
+			};
+
 			class single_episode_packet : public packet_base
 			{
 			public:

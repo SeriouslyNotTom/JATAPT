@@ -35,6 +35,7 @@ CLIENT_VARS JATAPT::CLIENT::Vars;
 JATAPT_GUI JATAPT::CLIENT::Gui;
 ImGui_Handler JATAPT::CLIENT::ImGuiInstance;
 JATAPT_NET_CLIENT JATAPT::CLIENT::Net_Client;
+Stored_Client_Data JATAPT::CLIENT::Data;
 
 #pragma region JATAPT_GUI_DEFINITION
 
@@ -174,7 +175,7 @@ void JATAPT_GUI::DrawMainList()
 				ImGui::PopItemWidth();
 				if (ImGui::Button("Refresh"))
 				{
-					Net_Client.GetEps();
+					//Net_Client.GetEps();
 				}
 
 				if (ImGui::BeginPopupModal("Delete?", NULL, ImGuiWindowFlags_AlwaysAutoResize))
@@ -314,10 +315,10 @@ void JATAPT_GUI::DrawEditWindow()
 				ImGui::OpenPopup("Invalid Input");
 			}
 			else {
-				Net_Client.SendEpisode(ep);
+				//Net_Client.SendEpisode(ep);
 				ClearDraft();
 				Vars.editing = false;
-				Net_Client.GetEps();
+				//Net_Client.GetEps();
 			}
 		}
 		ImGui::SameLine();
@@ -407,8 +408,8 @@ void JATAPT_GUI::ImGuiFrameStart()
 		if (!Vars.first_query)
 		{
 			Vars.first_query = true;
-			Net_Client.GetEps();
-			Net_Client.GetFiles();
+			//Net_Client.GetEps();
+			//Net_Client.GetFiles();
 		}
 		break;
 
@@ -460,9 +461,9 @@ DRAFT_DATA JATAPT_GUI::FillDraft(JATAPT::COMMON::J_EP episode)
 	draft.subtitle = new char[1024];
 	strcpy(draft.subtitle, episode.subtitle.c_str());
 	draft.file = new char[1024];
-	strcpy(draft.file, episode.audio_url.c_str());
-	struct tm* time;
-	ParseRFC822(episode.publication_date.c_str(),time);
+	strcpy(draft.file, episode.episode_file.file_name.c_str());
+	struct tm* time = gmtime(&(const time_t)episode.episode_publication_time);
+	//ParseRFC822(episode.episode_publication_time.c_str(),time);
 	draft.hour = Hours[time->tm_hour];
 	draft.minute = Minutes[time->tm_min];
 	draft.time = *time;
@@ -490,7 +491,7 @@ JATAPT::COMMON::J_EP JATAPT::CLIENT::JATAPT_GUI::FillEpisode(DRAFT_DATA draft)
 	draft.time.tm_hour = hours;
 	draft.time.tm_min = minutes;
 	draft.time.tm_sec = 0;
-	ep.publication_date = SerializeRFC822(&draft.time);
+	ep.episode_publication_time = tm_to_time_t(&draft.time);
 	return ep;
 }
 
@@ -546,7 +547,7 @@ void JATAPT_NET_CLIENT::OnSteamNetConnectionStatusChanged(SteamNetConnectionStat
 
 void JATAPT_NET_CLIENT::ProcessPacket(const char* data)
 {
-	auto pkt = json::parse(data);
+	/*auto pkt = json::parse(data);
 	J_CH Header = J_CH(pkt[J_PF_HEADER]);
 	switch (Header)
 	{
@@ -599,7 +600,7 @@ void JATAPT_NET_CLIENT::ProcessPacket(const char* data)
 				}
 			}
 		}
-	}
+	}*/
 }
 
 void JATAPT_NET_CLIENT::Cleanup()
@@ -668,68 +669,68 @@ void JATAPT_NET_CLIENT::ConnectToServer(char* con_addr, int con_port)
 	}
 }
 
-void JATAPT_NET_CLIENT::TryAuth()
-{
-	//strcpy(Gui.connect_status, "Authenticating...");
-	json j;
-	j[J_PF_HEADER] = J_CH::AUTH_RESPONSE;
-	j[J_PF_PASSWORD] = Vars.password;
-	std::string jdat = j.dump();
-	m_pInterface->SendMessageToConnection(m_hConnection, jdat.c_str(), (uint32)jdat.length(), k_nSteamNetworkingSend_Reliable, nullptr);
-}
+//void JATAPT_NET_CLIENT::TryAuth()
+//{
+//	//strcpy(Gui.connect_status, "Authenticating...");
+//	json j;
+//	j[J_PF_HEADER] = J_CH::AUTH_RESPONSE;
+//	j[J_PF_PASSWORD] = Vars.password;
+//	std::string jdat = j.dump();
+//	m_pInterface->SendMessageToConnection(m_hConnection, jdat.c_str(), (uint32)jdat.length(), k_nSteamNetworkingSend_Reliable, nullptr);
+//}
+//
+//void JATAPT_NET_CLIENT::GetEps()
+//{
+//	json j;
+//	j[J_PF_HEADER] = J_CH::EPISODE_QUERY;
+//	j[J_PF_QUERY] = "FULLSET";
+//	std::string jdat = j.dump();
+//	m_pInterface->SendMessageToConnection(m_hConnection, jdat.c_str(), (uint32)jdat.length(), k_nSteamNetworkingSend_Reliable, nullptr);
+//}
+//
+//void JATAPT_NET_CLIENT::GetFiles()
+//{
+//	json j;
+//	j[J_PF_HEADER] = J_CH::FILES_QUERY;
+//	j[J_PF_QUERY] = "FULLSET";
+//	std::string jdat = j.dump();
+//	m_pInterface->SendMessageToConnection(m_hConnection, jdat.c_str(), (uint32)jdat.length(), k_nSteamNetworkingSend_Reliable, nullptr);
+//}
 
-void JATAPT_NET_CLIENT::GetEps()
-{
-	json j;
-	j[J_PF_HEADER] = J_CH::EPISODE_QUERY;
-	j[J_PF_QUERY] = "FULLSET";
-	std::string jdat = j.dump();
-	m_pInterface->SendMessageToConnection(m_hConnection, jdat.c_str(), (uint32)jdat.length(), k_nSteamNetworkingSend_Reliable, nullptr);
-}
-
-void JATAPT_NET_CLIENT::GetFiles()
-{
-	json j;
-	j[J_PF_HEADER] = J_CH::FILES_QUERY;
-	j[J_PF_QUERY] = "FULLSET";
-	std::string jdat = j.dump();
-	m_pInterface->SendMessageToConnection(m_hConnection, jdat.c_str(), (uint32)jdat.length(), k_nSteamNetworkingSend_Reliable, nullptr);
-}
-
-void JATAPT_NET_CLIENT::SendEpisode(JATAPT::COMMON::J_EP Episode)
-{
-
-	//TODO: [JATAPT] fix send episode
-
-	/*JATAPTEpisodeVerifyState_ verif = Verify_Episode(Episode);
-	if (verif & JATAPTEpisodeVerifyState_NoEpTitle | verif & JATAPTEpisodeVerifyState_NoEpDescription | verif & JATAPTEpisodeVerifyState_NoEpSummary | verif & JATAPTEpisodeVerifyState_NoSubtitle | verif & JATAPTEpisodeVerifyState_NoFile | verif & JATAPTEpisodeVerifyState_NoPubDate) { return; }
-
-	json j;
-	j[J_PF_HEADER] = J_CH::EPISODE_EDIT;
-	std::string data;
-	json j2;
-
-	if (Episode.guid.size() > 0)
-	{
-		j[J_PF_OPERATION] = J_FC::EPISODE_EXISTING;
-		j2["guid"] = Episode.guid;
-	}
-	else {
-		j[J_PF_OPERATION] = J_FC::EPISODE_NEW;
-	}
-
-	j2["title"] = Episode.title;
-	j2["description"] = Episode.description;
-	j2["summary"] = Episode.summary;
-	j2["subtitle"] = Episode.subtitle;
-	j2["audio_url"] = Episode.audio_url;
-	j2["publication_date"] = Episode.publication_date;
-
-	data = j2.dump();
-	j[J_PF_DATA] = data;
-	std::string packet_data = j.dump();
-	m_pInterface->SendMessageToConnection(m_hConnection, packet_data.c_str(), (uint32)packet_data.length(), k_nSteamNetworkingSend_Reliable, nullptr);*/
-}
+//void JATAPT_NET_CLIENT::SendEpisode(JATAPT::COMMON::J_EP Episode)
+//{
+//
+//	//TODO: [JATAPT] fix send episode
+//
+//	/*JATAPTEpisodeVerifyState_ verif = Verify_Episode(Episode);
+//	if (verif & JATAPTEpisodeVerifyState_NoEpTitle | verif & JATAPTEpisodeVerifyState_NoEpDescription | verif & JATAPTEpisodeVerifyState_NoEpSummary | verif & JATAPTEpisodeVerifyState_NoSubtitle | verif & JATAPTEpisodeVerifyState_NoFile | verif & JATAPTEpisodeVerifyState_NoPubDate) { return; }
+//
+//	json j;
+//	j[J_PF_HEADER] = J_CH::EPISODE_EDIT;
+//	std::string data;
+//	json j2;
+//
+//	if (Episode.guid.size() > 0)
+//	{
+//		j[J_PF_OPERATION] = J_FC::EPISODE_EXISTING;
+//		j2["guid"] = Episode.guid;
+//	}
+//	else {
+//		j[J_PF_OPERATION] = J_FC::EPISODE_NEW;
+//	}
+//
+//	j2["title"] = Episode.title;
+//	j2["description"] = Episode.description;
+//	j2["summary"] = Episode.summary;
+//	j2["subtitle"] = Episode.subtitle;
+//	j2["audio_url"] = Episode.audio_url;
+//	j2["publication_date"] = Episode.publication_date;
+//
+//	data = j2.dump();
+//	j[J_PF_DATA] = data;
+//	std::string packet_data = j.dump();
+//	m_pInterface->SendMessageToConnection(m_hConnection, packet_data.c_str(), (uint32)packet_data.length(), k_nSteamNetworkingSend_Reliable, nullptr);*/
+//}
 
 #pragma endregion JATAPT_NET_CLIENT_DEFINITION
 

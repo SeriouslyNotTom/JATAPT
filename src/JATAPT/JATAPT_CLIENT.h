@@ -7,6 +7,12 @@
 #include <JATAPT/JATAPT_COMMON.h>
 #include <time.h>
 
+struct Stored_Client_Data
+{
+	JATAPT::COMMON::J_EP_SET Stored_Episodes;
+	JATAPT::COMMON::J_FILE_SET Stored_Files;
+};
+
 namespace JATAPT
 {
 	namespace CLIENT
@@ -18,8 +24,7 @@ namespace JATAPT
 			ISteamNetworkingSockets* m_pInterface;
 			HSteamNetConnection m_hConnection;
 			SteamNetworkingIPAddr serverAddr;
-			char* Episode_JSON_Data;
-			char* Files_JSON_Data;
+
 			char* addr = new char[255];
 
 			virtual void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* pInfo) override;
@@ -27,10 +32,10 @@ namespace JATAPT
 			void ProcessPacket(const char* data);
 		public:
 			//network commands
-			void TryAuth();
-			void GetEps();
-			void GetFiles();
-			void SendEpisode(JATAPT::COMMON::J_EP Episode);
+			//void TryAuth();
+			//void GetEps();
+			//void GetFiles();
+			//void SendEpisode(JATAPT::COMMON::J_EP Episode);
 
 			//lifecycle
 			void Poll();
@@ -105,6 +110,7 @@ namespace JATAPT
 		extern JATAPT_GUI Gui;
 		extern ImGui_Handler ImGuiInstance;
 		extern JATAPT_NET_CLIENT Net_Client;
+		extern Stored_Client_Data Data;
 
 		extern const char* settings_location;
 

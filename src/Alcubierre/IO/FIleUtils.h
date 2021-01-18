@@ -2,6 +2,9 @@
 
 #include <vector>
 #include <sys/stat.h>
+#include <string>
+#include <exception>
+using namespace std;
 
 enum AlcubierreListDirFlags_
 {
@@ -22,7 +25,7 @@ namespace Alcubierre
 		namespace Util
 		{
 			char* BrowseFileSingle(char* Title, char* filter);
-			std::vector<char*> ListDir(const char* Path, AlcubierreListDirFlags dir_flags = 0);
+			std::vector<std::string> ListDir(const char* Path, AlcubierreListDirFlags dir_flags = 0);
 
 			bool FileExists(const char* Path, struct stat* stat_out = nullptr);
 
@@ -39,21 +42,29 @@ namespace Alcubierre
 			std::vector<char*> Strip_FileTypes(std::vector<char*> input_vector, const char* File_Type, bool invert = false);
 
 			/// <summary>
+			/// Replace divider characters (/, \, \\) with specified divider sequence
+			/// </summary>
+			/// <param name="path">Path to be conformed</param>
+			/// <param name="path_divider">Sequence to replace the current directory / item seperator</param>
+			/// <returns></returns>
+			const char* ConformPath(const char* path, const char* path_divider = "/");
+
+			/// <summary>
 			/// add path 1 onto path 2 with automatic detection of '/' (slashes) between paths
 			/// </summary>
 			/// <param name="path1"></param>
 			/// <param name="path2"></param>
 			/// <param name="path_divider">character sequence to use to seperate directories (default is '/')</param>
 			/// <returns></returns>
-			char* AddPath(char* path1, char* path2,bool replace_divider=true, char* path_divider = "/");
+			std::string AddPath(const char* path1, const char* path2,bool replace_divider=true, const char* path_divider = "/");
 
-			/// <summary>
-			/// Replace divider characters (/, \, \\) with specified divider sequence
-			/// </summary>
-			/// <param name="path">Path to be conformed</param>
-			/// <param name="path_divider">Sequence to replace the current directory / item seperator</param>
-			/// <returns></returns>
-			char* ConformPath(char* path, char* path_divider);
+			struct Mp3FileDuration_Exception_FileDoesNotExist : public exception {
+				const char* what() const throw () {
+					return "Mp3 File Does not exist or is not accessable";
+				}
+			};
+
+			int Mp3FileDuration(const char* audio_file);
 
 		}
 	}

@@ -26,40 +26,6 @@ namespace JATAPT
 {
 	namespace COMMON
 	{
-		//JATAPT_COMMAND_HEADER
-		enum J_CH
-		{
-			AUTH_RESPONSE,
-			AUTH_CHECK,
-			AUTH_SUCCESS,
-			AUTH_FAIL,
-			DATA_TRANSFER_INIT,
-			DATA_TRANSFER_BLOCK,
-			DATA_TRANSFER_END,
-			EPISODE_QUERY,
-			EPISODE_EDIT,
-			FILES_QUERY,
-			SERVER_INFO
-		};
-
-		//JATAPT_PACKET_FIELD
-		static const char* J_PF_HEADER = "Header";
-		static const char* J_PF_PASSWORD = "Password";
-		static const char* J_PF_EPISODES = "Episodes";
-		static const char* J_PF_FILES = "Files";
-		static const char* J_PF_QUERY = "Query";
-		static const char* J_PF_OPERATION = "Operation";
-		static const char* J_PF_DATA = "Data";
-
-		//JATAPT_FIELD_COMMAND
-		enum J_FC
-		{
-			FULL_QUERY,
-			SINGLE_QUERY,
-			EPISODE_NEW,
-			EPISODE_EXISTING,
-			EPISODE_DELETE
-		};
 
 		struct J_FILE
 		{
@@ -71,7 +37,7 @@ namespace JATAPT
 			template<class Archive>
 			void serialize(Archive& ar)
 			{
-				ar(file_name, file_path, _file_size);
+				ar(file_name, file_path, file_size);
 			}
 		};
 
@@ -110,6 +76,7 @@ namespace JATAPT
 		struct J_EP_SET
 		{
 			std::vector<J_EP> ep_set;
+			int episode_count;
 
 			template<class Archive>
 			void serialize(Archive& ar)
@@ -118,15 +85,7 @@ namespace JATAPT
 			}
 		};
 
-		void init_common();
-
-		std::vector<JATAPT::COMMON::J_EP> Serialize_Episodes(const char* xml_file, const char* audio_web_prefix);
-		const char* Packetize_Episode(JATAPT::COMMON::J_EP Episode);
-		const char* Packetize_Episodes(std::vector<JATAPT::COMMON::J_EP> eps);
-
-		std::vector<JATAPT::COMMON::J_EP> Deserialize_Episodes(char* JSON_DATA);
-		JATAPT::COMMON::J_EP Deserialize_Episode(std::string json_data);
-
+		
 		//verification stuff
 		//-------------------------------------------------------------------
 		bool Check_Episode_Fully_Defined(JATAPT::COMMON::J_EP Episode);
@@ -159,5 +118,6 @@ namespace JATAPT
 		char* SerializeRFC822(tm* time_struct);
 		char* ParseXMLSpecialCharacter(char* input_Sequence);
 
+		void init_common();
 	}
 }
