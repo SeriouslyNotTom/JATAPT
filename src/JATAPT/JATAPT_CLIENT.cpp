@@ -462,13 +462,13 @@ DRAFT_DATA JATAPT_GUI::FillDraft(JATAPT::COMMON::J_EP episode)
 	strcpy(draft.subtitle, episode.subtitle.c_str());
 	draft.file = new char[1024];
 	strcpy(draft.file, episode.episode_file.file_name.c_str());
-	struct tm* time = gmtime(&(const time_t)episode.episode_publication_time);
+	//struct tm* time = gmtime(&(const time_t)episode.episode_publication_time);
 	//ParseRFC822(episode.episode_publication_time.c_str(),time);
-	draft.hour = Hours[time->tm_hour];
-	draft.minute = Minutes[time->tm_min];
-	draft.time = *time;
-	draft.guid = new char[episode.guid.size()];
-	strcpy(draft.guid, episode.guid.c_str());
+	//draft.hour = Hours[time->tm_hour];
+	//draft.minute = Minutes[time->tm_min];
+	//draft.time = *time;
+	//draft.guid = new char[episode.guid.size()];
+	//strcpy(draft.guid, episode.guid.c_str());
 	return draft;
 }
 

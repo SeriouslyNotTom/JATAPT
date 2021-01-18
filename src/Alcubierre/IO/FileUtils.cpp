@@ -7,6 +7,7 @@
 #define MINIMP3_IMPLEMENTATION
 #include <minimp3.h>
 #include <iostream>
+#include <cmath>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -349,12 +350,14 @@ int Alcubierre::File::Util::Mp3FileDuration(const char* path1)
 
 	//decode to get info
 	int samples = mp3dec_decode_frame(&mp3d, file_buffer, 16384, pcm, &info);
+	cout << samples;
 
 	//i don't know where this offset comes from but it works
 	int offset = 71;
 
 	//duration is audio size divided by bitrate
-	int file_seconds = (((buff.st_size+info.frame_offset)*8/1024) / info.bitrate_kbps)+offset;
+	int file_size_corrected = (int)buff.st_size + (int)info.frame_offset;
+	int file_seconds = (file_size_corrected*8/1024) / (int)info.bitrate_kbps+(int)offset;
 
 	int minutes = floor(file_seconds / 60);
 	int seconds = file_seconds - (minutes * 60);
