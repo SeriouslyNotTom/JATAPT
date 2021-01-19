@@ -40,6 +40,8 @@ using namespace JATAPT::COMMON::NET;
 int main(int argc, char* argv[])
 {
 
+	int duration = Alcubierre::File::Util::Mp3FileDuration("D:\\Slow\\audio\\Split.View-001.mp3");
+
 	try
 	{
 		bool ServerMode = false;

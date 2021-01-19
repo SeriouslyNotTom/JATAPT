@@ -548,7 +548,7 @@ void Server::LoadFiles()
 			{
 				J_FILE file{};
 				file.file_name = char_TrimString(file_path.c_str(), config.audio_path);
-				file.file_duration_seconds = Alcubierre::File::Util::Mp3FileDuration(file_path.c_str());
+				//file.file_duration_seconds = Alcubierre::File::Util::Mp3FileDuration(file_path.c_str());
 				file.file_path = Alcubierre::File::Util::AddPath(config.audio_web_prefix,audio_files[i].c_str(),false);
 				file.file_size = buff.st_size;
 				file_set.file_set.push_back(file);

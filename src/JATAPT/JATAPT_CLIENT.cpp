@@ -127,7 +127,7 @@ void JATAPT_GUI::DrawMainList()
 						ImGui::EndTooltip();
 					}
 					ImGui::NextColumn();
-					ImGui::Text(std::to_string(ep.episode_file.file_duration_seconds).c_str()); ImGui::NextColumn();
+					//ImGui::Text(std::to_string(ep.episode_file.file_duration_seconds).c_str()); ImGui::NextColumn();
 					//ImGui::Text(ep.publication_date.c_str()); ImGui::NextColumn();
 				}
 

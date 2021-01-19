@@ -101,7 +101,7 @@ namespace JATAPT
 
 			JATAPTEpisodeVerifyState_NoFileName = 1 << 4,
 			JATAPTEpisodeVerifyState_NoFilePath = 1 << 5,
-			JATAPTEpisodeVerifyState_NoFileDuration = 1 << 6,
+			//JATAPTEpisodeVerifyState_NoFileDuration = 1 << 6,
 			JATAPTEpisodeVerifyState_NoFileSize = 1 << 7,
 
 			JATAPTEpisodeVerifyState_NoPubDate = 1 << 8,

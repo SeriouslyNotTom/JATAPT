@@ -350,8 +350,7 @@ int Alcubierre::File::Util::Mp3FileDuration(const char* path1)
 
 	//decode to get info
 	int samples = mp3dec_decode_frame(&mp3d, file_buffer, 16384, pcm, &info);
-	cout << samples;
-
+	
 	//i don't know where this offset comes from but it works
 	int offset = 71;
 

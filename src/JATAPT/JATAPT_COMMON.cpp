@@ -196,7 +196,7 @@ JATAPT::COMMON::JATAPTEpisodeVerifyState_ JATAPT::COMMON::Verify_Episode(J_EP Ep
 
 	//file stuff
 	if (Episode.episode_file.file_name == "" | (Episode.episode_file.file_name.size() <= 0)) { state = state | JATAPTEpisodeVerifyState_NoFileName; }
-	if (Episode.episode_file.file_duration_seconds == 0 | (Episode.episode_file.file_duration_seconds==-1)) { state = state | JATAPTEpisodeVerifyState_NoFileDuration; }
+	//if (Episode.episode_file.file_duration_seconds == 0 | (Episode.episode_file.file_duration_seconds==-1)) { state = state | JATAPTEpisodeVerifyState_NoFileDuration; }
 	if (Episode.episode_file.file_path == "" | (Episode.episode_file.file_path.size() <=0)) { state = state | JATAPTEpisodeVerifyState_NoFilePath; }
 	if (Episode.episode_file.file_size == 0 | (Episode.episode_file.file_size == -1)) { state = state | JATAPTEpisodeVerifyState_NoFileSize; }
 
