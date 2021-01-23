@@ -157,6 +157,7 @@ std::vector<std::string> Alcubierre::File::Util::ListDir(const char* Path, Alcub
 			{
 				if (!o_NoFiles)
 				{
+
 					if (o_AppendSubdir & cur_subdir!="")
 					{
 						results.push_back(AddPath(cur_subdir.c_str(),file_h->d_name,false));
@@ -164,6 +165,7 @@ std::vector<std::string> Alcubierre::File::Util::ListDir(const char* Path, Alcub
 					else {
 						results.push_back(std::string(file_h->d_name));
 					}
+					fprintf(stdout,"vec:result:%s\r\n",results[results.size()-1].c_str());
 				}
 				break;
 			}

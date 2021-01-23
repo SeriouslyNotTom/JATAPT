@@ -40,7 +40,8 @@ using namespace JATAPT::COMMON::NET;
 int main(int argc, char* argv[])
 {
 
-	int duration = Alcubierre::File::Util::Mp3FileDuration("D:\\Slow\\audio\\Split.View-001.mp3");
+	//std::vector<std::string> audio_files = Alcubierre::File::Util::ListDir("/var/www/html-cdn/podcast/audio",AlcubierreListDirFlags_Recurse|AlcubierreListDirFLags_AppendSubdirectoryPrefix);
+	
 
 	try
 	{

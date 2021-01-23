@@ -493,14 +493,14 @@ void Server::LoadEpisodes()
 		{
 			if (std::string("/")+audio_file == Data.Stored_Files.file_set[i].file_name) {
 				new_ep.episode_file = Data.Stored_Files.file_set[i];
-				found_file = !found_file;
+				found_file = true;
 				break;
 			}
 		}
 
 		if (!found_file)
 		{
-			Alcubierre::Debug::Log::Msg("WARNING", "Could not find matching file for episode: %, tested file name: %s", new_ep.title, audio_url);
+			Alcubierre::Debug::Log::Msg("WARNING", "Could not find matching file for episode: %, tested file name: %s", new_ep.title.c_str(), audio_url);
 		}
 
 		ep_set.ep_set.push_back(new_ep);
