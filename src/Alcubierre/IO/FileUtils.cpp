@@ -290,6 +290,10 @@ const char* Alcubierre::File::Util::ConformPath(const char* path, const char* pa
 
 std::string Alcubierre::File::Util::AddPath(const char* path1, const char* path2, bool replace_divider, const char* path_divider)
 {
+
+	if (strlen(path1) == 0) { return std::string(path2); }
+	if (strlen(path2) == 0) { return std::string(path1); }
+
 	char* working_path1;
 	char* working_path2;
 	std::string final_path;

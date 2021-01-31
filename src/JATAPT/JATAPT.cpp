@@ -39,10 +39,6 @@ using namespace JATAPT::COMMON::NET;
 
 int main(int argc, char* argv[])
 {
-
-	//std::vector<std::string> audio_files = Alcubierre::File::Util::ListDir("/var/www/html-cdn/podcast/audio",AlcubierreListDirFlags_Recurse|AlcubierreListDirFLags_AppendSubdirectoryPrefix);
-	
-
 	try
 	{
 		bool ServerMode = false;

@@ -739,6 +739,7 @@ void JATAPT::SERVER::StartServer(char* config_path)
 	Server sv;
 	Alcubierre::Initialize_Core();
 	Alcubierre::Net::init();
+
 	sv.Run();
 
 }
