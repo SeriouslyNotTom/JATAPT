@@ -9,6 +9,7 @@
 #include <cereal/types/chrono.hpp>
 #include <fstream>
 
+extern int last_packet_id;
 
 namespace JATAPT
 {
@@ -16,6 +17,9 @@ namespace JATAPT
 	{
 		namespace NET
 		{
+
+			
+
 			enum opcode_e
 			{
 				opcode_UNDEFINED,
@@ -40,12 +44,11 @@ namespace JATAPT
 			public:
 				int packetid = 0;
 				time_t sent_time = 0;
-				std::uint32_t crc = 0;
 
 				template<class Archive>
 				void serialize(Archive& ar)
 				{
-					ar(packetid, sent_time, crc);
+					ar(packetid, sent_time);
 				}
 			};
 			
@@ -71,6 +74,7 @@ namespace JATAPT
 				std::string packet_handle = "jt_network_transfer_packet";
 				packet_base stored_packet;
 				std::string stored_packet_handle;
+				std::uint32_t crc = 0;
 
 				template<class Archive>
 				void serialize(Archive& ar)
@@ -94,6 +98,21 @@ namespace JATAPT
 				}
 			};
 
+			class auth_packet : public packet_base
+			{
+			public:
+				std::string packet_handle = "jt_auth_packet";
+				std::string password;
+
+				template<class Archive>
+				void serialize(Archive& ar)
+				{
+					packet_base::serialize(ar);
+					ar(password);
+				}
+			};
+
+			void Calculate_Packet_info(packet_base pkt_base);
 		}
 	}
 }

@@ -31,6 +31,7 @@ using namespace std;
 using json = nlohmann::json;
 
 using namespace JATAPT::COMMON;
+using namespace JATAPT::COMMON::NET;
 
 Server_Config config;
 
@@ -158,6 +159,8 @@ void Server::Check_Spooled_Episodes()
 void Server::Run()
 {
 
+	//load everything
+
 	Alcubierre::Debug::Log::Msg("Jatapt", "Loading Files");
 	LoadFiles();
 	Alcubierre::Debug::Log::Msg("Jatapt", "Loaded %i Files", Data.Stored_Files.file_count);
@@ -166,25 +169,11 @@ void Server::Run()
 	LoadEpisodes();
 	Alcubierre::Debug::Log::Msg("Jatapt", "Loaded %i Episodes", Data.Stored_Episodes.episode_count);
 
-	/*Alcubierre::Debug::Log::Msg("Jatapt", "Allocating blobs");
-	try {
-		for (int i = 0; i < config.blob_count; i++)
-		{
-			blob b = blob();
-			b.init(config.blob_size);
-			blobs.push_back(b);
-			Alcubierre::Debug::Log::Msg("Jatapt", "blob %i allocated with size: %i MB", i, (int)(config.blob_size / 1024 / 1024));
-		}
-	}
-	catch (std::bad_alloc& b)
-	{
-		Alcubierre::Debug::Log::Msg("ERROR", "COULD NOT ALLOCATE MEMORY BLOBS FOR FILES %s",b.what());
-		Alcubierre::Exit(-2);
-	}*/
-
 	Alcubierre::Debug::Log::Msg("Jatapt", "Loading spooled episodes");
 	Load_Spooled_Episodes();
 
+	//initialize network stuff
+	
 	Interface = SteamNetworkingSockets();
 	SteamNetworkingIPAddr serverLocalAddr;
 	serverLocalAddr.Clear();
@@ -201,6 +190,7 @@ void Server::Run()
 	serverLocalAddr.ToString(serverStr, sizeof(serverStr), true);
 	Alcubierre::Debug::Log::Msg("Jatapt","max packet size: %iKB", k_cbMaxSteamNetworkingSocketsMessageSizeSend/1024);
 	Alcubierre::Debug::Log::Msg("Jatapt", "Listening on %s", serverStr);
+
 	Client_List = std::map<HSteamNetConnection, Client_t>();
 	Client_List.clear();
 
@@ -210,6 +200,11 @@ void Server::Run()
 		Alcubierre::Debug::Log::Msg("ERROR", "Could not create poll group");
 		Alcubierre::Exit(-666);
 	}
+
+	HSteamNetConnection conn = 42069;
+	auth_packet auth_pkt;
+	auth_pkt.opcode = opcode_e::S_AUTH;
+	Server::Send_Packet(conn, auth_pkt);
 
 	while (true)
 	{
@@ -221,6 +216,25 @@ void Server::Run()
 
 }
 
+bool Server::Send_Packet(HSteamNetConnection conn, JATAPT::COMMON::NET::packet_base pkt)
+{
+	network_transfer_packet netpkt;
+	netpkt.stored_packet = pkt;
+	netpkt.stored_packet_handle = pkt.packet_handle;
+
+	std::stringstream packet_data_stream;
+	cereal::BinaryOutputArchive oarchive(packet_data_stream);
+
+	oarchive(netpkt);
+
+	std::string final_output = packet_data_stream.str();
+
+	//packet_data_stream.flush();
+	//packet_data_stream.str(final_output);
+
+	return false;
+}
+
 void Server::PollIncoming()
 {
 	ISteamNetworkingMessage* incoming = nullptr;
@@ -228,7 +242,7 @@ void Server::PollIncoming()
 	if (numMsg == 0) { return; }
 	if (numMsg > 0)
 	{
-		Alcubierre::Debug::Log::Msg("Network", "GOT MSG");
+		//Alcubierre::Debug::Log::Msg("Network", "GOT MSG");
 		//fprintf(stdout, "%s\r\n", incoming->m_pData);
 		if (incoming->m_cbSize>0)
 		{
@@ -238,40 +252,35 @@ void Server::PollIncoming()
 			ProcessCommand(data, incoming->m_conn);
 		}
 	}
-
 }
 
-//bool Server::CheckAuth(HSteamNetConnection conn, bool boot)
-//{
-//	if (Client_List[conn].Authenticated != true)
-//	{
-//		json pkt;
-//		pkt[J_PF_HEADER] = J_CH::AUTH_FAIL;
-//		std::string dmp = pkt.dump();
-//		Interface->SendMessageToConnection(conn, dmp.c_str(), (uint32)dmp.length(), k_nSteamNetworkingSend_Reliable, nullptr);
-//		if (boot) { Interface->CloseConnection(conn, -666, "Not Authenticated", false); }
-//		return false;
-//	}
-//	//making god dang sure that the client IS authenticated or atleast they somehow managed to set their own authenticated flag to true
-//	if (Client_List[conn].Authenticated == true)
-//	{
-//		return true;
-//	}
-//	//just incase or more accurately... edgecase
-//	//that was a good joke and you laughed at it.
-//	if (boot) { Interface->CloseConnection(conn, -666, "Not Authenticated", false); }
-//	return false;
-//}
+bool Server::CheckAuth(HSteamNetConnection conn, bool boot_client)
+{
+	if (Client_List[conn].Authenticated == true)
+	{
+		return true;
+	}
+	else {
+		if (boot_client)
+		{
+			//boot them
+		}
+		return false;
+	}
+	//just encase this code is being triggered via some vulnerability
+	Client_List[conn].Authenticated = false;
+	return false;
+}
 
-//void Server::TryAuth(HSteamNetConnection conn)
-//{
-//	//never check if the client is authenticated already, since if someone managed to exploit auth status they will have it permanently. even through auth checks
-//	Client_List[conn].Authenticated = false;
-//	json pkt;
-//	pkt[J_PF_HEADER] = J_CH::AUTH_CHECK;
-//	std::string dmp = pkt.dump();
-//	Interface->SendMessageToConnection(conn, dmp.c_str(), (uint32)dmp.length(), k_nSteamNetworkingSend_Reliable, nullptr);
-//}
+void Server::TryAuth(HSteamNetConnection conn)
+{
+	//never check if the client is authenticated already, since if someone managed to exploit auth status they will have it permanently. even through auth checks
+	Client_List[conn].Authenticated = false;
+
+	auth_packet pkt;
+	pkt.opcode = opcode_e::S_AUTH;
+	Send_Packet(conn,pkt);
+}
 
 void Server::OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* pInfo)
 {
@@ -461,51 +470,99 @@ void Server::LoadEpisodes()
 	Alcubierre::Debug::Log::Msg("Jatapt", "Serializing Episodes..");
 	Alcubierre::Error::CheckFile(config.xml_path);
 	
+	//create doc and open
 	pugi::xml_document doc;
 	pugi::xml_parse_result result = doc.load_file(config.xml_path);
 	pugi::xml_node channel_node = doc.child("rss").child("channel");
 
+	//final array of loaded episodes
 	J_EP_SET ep_set{};
 
+	// temp struct for storing episode data from xml
+	// we want the xml file to be open for the shortest amount of time
+	// to avoid weird memory stuff and undetected heap corruption causing havok
+	struct ep_xml_storage {
+		std::string title;
+		std::string description;
+		std::string summary;
+		std::string subtitle;
+		std::string guid;
+		std::string audio_file;
+		int audio_file_size;
+		std::string audio_file_length;
+		std::string episode_publication_time;
+	};
+
+	std::vector<ep_xml_storage> ep_xml_storage_vec;
+
+	//find and loop through each item note in the rss feed
+	//100% need to do some verification to make sure we even have items before looping
+	//TODO
 	for (pugi::xml_node item = channel_node.child("item"); item; item = item.next_sibling("item"))
 	{
-		J_EP new_ep;
+		//split view episodes look like this
+		/*<item>
+			<title>Tent Pegs(Tent Pegs) </title>
+			<description>Tent Pegs< / description>
+			<itunes:summary>Tent Pegs< / itunes:summary>
+			<itunes:subtitle>Tent Pegs< / itunes:subtitle>
+			<itunes:episodeType>full< / itunes:episodeType>
+			<enclosure url = "http://cdn.polygonal.polarity.technology/podcast/audio/Split.View.02-012.mp3" type = "audio/mpeg" length = "72282272" / >
+			<guid>e58f8733 - 983f - 48f4 - 8980 - eff32050b810< / guid>
+			< itunes:duration>00:30 : 07 < / itunes : duration >
+			<pubDate>Sun, 24 Jan 2021 00 : 00 : 00 GMT< / pubDate>
+		</item>*/
+
+		ep_xml_storage new_ep;
+
 		new_ep.title = item.child("title").text().as_string();
 		new_ep.description = item.child("description").text().as_string();
 		new_ep.summary = item.child("itunes:summary").text().as_string();
 		new_ep.subtitle = item.child("itunes:subtitle").text().as_string();
 		new_ep.guid = item.child("guid").text().as_string();
-
-		//do not do this
-		tm ep_time;
-		ParseRFC822(item.child("pubDate").text().as_string(), &ep_time);
-		time_t pub_time = tm_to_time_t(&ep_time);
-		new_ep.episode_publication_time = pub_time;
-
-		pugi::xml_node enclosure = item.child("enclosure");
-
-		std::string audio_url = enclosure.attribute("url").value();
-		const char* audio_file = char_TrimString(audio_url.c_str(), config.audio_web_prefix);
 		
-		bool found_file = false;
+		//episode audio file info is loacted in an rss enclosure
+		pugi::xml_node enclosure = item.child("enclosure");
+		new_ep.audio_file = enclosure.attribute("url").value();
+		new_ep.audio_file_size = enclosure.attribute("length").as_int();
 
-		for (int i = 0; i < Data.Stored_Files.file_set.size(); i++)
-		{
-			if (std::string("/")+audio_file == Data.Stored_Files.file_set[i].file_name) {
-				new_ep.episode_file = Data.Stored_Files.file_set[i];
-				found_file = true;
-				break;
-			}
-		}
+		new_ep.audio_file_length = item.child("itunes:duration").text().as_string();
+		new_ep.episode_publication_time = item.child("pubDate").text().as_string();
 
-		if (!found_file)
-		{
-			Alcubierre::Debug::Log::Msg("WARNING", "Could not find matching file for episode: %, tested file name: %s", new_ep.title.c_str(), audio_url);
-		}
+		ep_xml_storage_vec.push_back(new_ep);
+	}
 
-		ep_set.ep_set.push_back(new_ep);
+	for (int i = 0; i < ep_xml_storage_vec.size(); i++)
+	{
+		ep_xml_storage ep_xml = ep_xml_storage_vec[i];
+
+		J_EP new_J_EP;
+
+		new_J_EP.title = ep_xml.title;
+		new_J_EP.description = ep_xml.description;
+		new_J_EP.summary = ep_xml.summary;
+		new_J_EP.subtitle = ep_xml.subtitle;
+		new_J_EP.guid = ep_xml.guid;
+
+		new_J_EP.episode_publication_time = RFC822_to_time_t(ep_xml.episode_publication_time.c_str());
+		new_J_EP.episode_file.file_path = ep_xml.audio_file;
+		
+		int duration = 0;
+		int duration_hours = 0;
+		int duration_minutes = 0;
+		int duration_seconds = 0;
+		sscanf(ep_xml.audio_file_length.c_str(), "%d:%d:%d", &duration_hours, &duration_minutes, &duration_seconds);
+		//hours
+		duration += duration_hours * (60 * 60);
+		//minutes
+		duration += duration_minutes * 60;
+		//seconds
+		duration += duration_seconds;
+
+		new_J_EP.episode_file.file_duration_seconds = duration;
+		
+		ep_set.ep_set.push_back(new_J_EP);
 		ep_set.episode_count++;
-
 	}
 
 	Data.Stored_Episodes = ep_set;

@@ -26,6 +26,8 @@ const char* Days[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 const char* Hours[24] = { "0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23" };
 const char* Minutes[60] = { "0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59" };
 
+int seconds_in_year = (60 * 60) * 24 * 365;
+
 std::map<char, char*> XMLSpecialChars =
 {
 	{'&',"&amp;"},
@@ -309,6 +311,15 @@ char* JATAPT::COMMON::ParseXMLSpecialCharacter(char* input_Sequence)
 	}
 
 	return final_str;
+}
+
+time_t JATAPT::COMMON::RFC822_to_time_t(const char* RFC_string)
+{
+	//very bad
+	tm time_struct{};
+	ParseRFC822(RFC_string, &time_struct);
+	time_t final_time = tm_to_time_t(&time_struct);
+	return final_time;
 }
 
 void JATAPT::COMMON::init_common()

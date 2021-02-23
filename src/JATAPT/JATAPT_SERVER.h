@@ -12,6 +12,7 @@
 #include <cereal/types/chrono.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/archives/binary.hpp>
+#include <JATAPT/Network/Packets.h>
 
 class Server_Config
 {
@@ -107,10 +108,11 @@ private:
 	virtual void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* pInfo) override;
 	void ProcessCommand(const char* pkt, HSteamNetConnection conn);
 	bool CheckAuth(HSteamNetConnection conn, bool boot = false);
-	//void TryAuth(HSteamNetConnection conn);
+	void TryAuth(HSteamNetConnection conn);
 
 public:
 	void Run();
+	bool Send_Packet(HSteamNetConnection conn, JATAPT::COMMON::NET::packet_base pkt);
 	void SendFailAuth(HSteamNetConnection conn);
 };
 

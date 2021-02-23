@@ -54,5 +54,6 @@ void Alcubierre::Accept_Arguments(int argc, char* argv)
 void Alcubierre::Exit(int code)
 {
 	Alcubierre::Debug::Log::Msg("Alcubierre", "Got Exit Code (%i)", code);
+	Alcubierre::Debug::Log::Msg("ERROR","Exiting...");
 	exit(code);
 }

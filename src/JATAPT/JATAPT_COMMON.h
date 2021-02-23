@@ -20,6 +20,8 @@ extern const char* Days[];
 extern const char* Hours[];
 extern const char* Minutes[];
 
+extern int seconds_in_year;
+
 extern std::map<char, char*> XMLSpecialChars;
 
 namespace JATAPT
@@ -117,6 +119,7 @@ namespace JATAPT
 		void ParseRFC822(const char* string, tm* time_struct);
 		char* SerializeRFC822(tm* time_struct);
 		char* ParseXMLSpecialCharacter(char* input_Sequence);
+		time_t RFC822_to_time_t(const char* RFC_string);
 
 		void init_common();
 	}
